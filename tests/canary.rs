@@ -15,9 +15,7 @@ fn should_render_trivial_example() {
         }
     }
 
-    let mut out = Vec::new();
-    render_writer(TrivialExample, &mut out).expect("render_writer");
-    let s = String::from_utf8_lossy(&out);
+    let s = render_to_string(TrivialExample).expect("render_writer");
     let expected = "<p>Hello</p>";
     assert!(
         s.contains(expected),

@@ -71,3 +71,9 @@ pub fn render_writer<R: Renderable, W: io::Write>(widget: R, out: W) -> Result<(
     Ok(())
 }
 
+pub fn render_to_string<R: Renderable>(widget: R) -> Result<String, io::Error> {
+    let mut out = Vec::new();
+    render_writer(widget, &mut out)?;
+    Ok(String::from_utf8_lossy(&out).into_owned())
+}
+

@@ -19,9 +19,7 @@ impl<'a> From<&'a str> for QName {
 
 impl QName {
     fn as_qual_name(&self) -> html5ever::QualName {
-        html5ever::QualName::new(
-            None, ns!(), html5ever::LocalName::from(self.0.clone()),
-        )
+        html5ever::QualName::new(None, ns!(), html5ever::LocalName::from(self.0.clone()))
     }
 }
 
@@ -76,4 +74,3 @@ pub fn render_to_string<R: Renderable>(widget: R) -> Result<String, io::Error> {
     render_writer(widget, &mut out)?;
     Ok(String::from_utf8_lossy(&out).into_owned())
 }
-

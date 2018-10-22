@@ -2,6 +2,8 @@ extern crate weft;
 
 use std::io;
 use weft::*;
+#[macro_use]
+extern crate weft_derive;
 
 #[test]
 fn should_render_trivial_example() {
@@ -26,11 +28,35 @@ fn should_render_trivial_example() {
     );
 }
 
+#[derive(WeftTemplate)]
+#[template(path = "tests/trivial.html")]
+struct TrivialMarkup;
+
 #[test]
 fn should_derive_trivial_from_markup() {
-    #[derive(WeftTemplate)]
-    struct TrivialMarkup;
-
     let s = render_to_string(TrivialMarkup).expect("render_writer");
     println!("{}", s);
+
+    let expected = "<div>Trivial example</div>";
+    assert!(
+        s.contains(expected),
+        "String {:?} contains {:?}",
+        s,
+        expected
+    )
+}
+
+#[test]
+#[ignore]
+fn should_not_include_enclosing_html_tags() {
+    let s = render_to_string(TrivialMarkup).expect("render_writer");
+    println!("{}", s);
+
+    let unexpected = "<html>";
+    assert!(
+        !s.contains(unexpected),
+        "String {:?} contains {:?}",
+        s,
+        unexpected
+    )
 }

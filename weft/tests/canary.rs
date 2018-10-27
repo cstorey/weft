@@ -77,3 +77,40 @@ fn should_interpolate_content_in_cdata() {
         expected
     )
 }
+
+#[derive(WeftTemplate)]
+#[template(path = "tests/conditional.html")]
+struct Conditional {
+    enabled: bool,
+}
+#[test]
+fn should_strip_when_conditional_false() {
+    let view = Conditional { enabled: false };
+
+    let s = render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let unexpected = "I am enabled";
+    assert!(
+        !s.contains(unexpected),
+        "String {:?} should not contain {:?}",
+        s,
+        unexpected
+    )
+}
+
+#[test]
+fn should_include_when_conditional_true() {
+    let view = Conditional { enabled: true };
+
+    let s = render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "I am enabled";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}

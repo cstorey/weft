@@ -3,6 +3,9 @@ extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
 extern crate failure;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 extern crate syn;
 #[macro_use]
 extern crate html5ever;
@@ -20,6 +23,9 @@ use quote::ToTokens;
 
 #[proc_macro_derive(WeftTemplate, attributes(template))]
 pub fn derive_template(input: TokenStream) -> TokenStream {
+    // Theoretically `rustc` provides it's own logging, but we
+    // don't know for sure that we're using the same `log` crate. So, just in case?
+    env_logger::init();
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
     match make_template(&ast) {
         Ok(toks) => toks.into(),
@@ -31,12 +37,11 @@ fn make_template(item: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Er
     let template = find_template(item).context("find template")?;
     let root_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or(".".into());
     let path = PathBuf::from(root_dir).join(template);
-
     let dom = parse(&path)?;
 
     let impl_body = template_fn_body(&dom)?;
 
-    // eprintln!("Fn body: {}", impl_body);
+    debug!("Fn body: {}", impl_body);
 
     let ident = &item.ident;
     let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
@@ -53,6 +58,8 @@ fn make_template(item: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Er
 }
 
 fn parse(path: &Path) -> Result<Vec<Handle>, Error> {
+    info!("Using template from {:?}", path);
+    eprintln!("Using template from {:?}", path);
     let root_name = QualName::new(None, ns!(html), local_name!("html"));
     let dom = parse_fragment(RcDom::default(), Default::default(), root_name, Vec::new())
         .from_utf8()
@@ -136,6 +143,7 @@ impl Walker {
 }
 
 fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
+    info!("Deriving implementation");
     let mut walker = Walker::default();
     walker.children(nodes)?;
     Ok(walker.into_body())
@@ -148,7 +156,7 @@ impl Walker {
                 self.children(&node.children.borrow())?;
             }
             NodeData::Doctype { .. } => {
-                eprintln!(
+                debug!(
                     "Ignoring doctype: children: {:?}",
                     node.children.borrow().len()
                 );
@@ -160,13 +168,13 @@ impl Walker {
                 self.text(&*contents.borrow())?;
             }
             NodeData::Comment { .. } => {
-                eprintln!(
+                debug!(
                     "Ignoring comment: children: {:?}",
                     node.children.borrow().len()
                 );
             }
             NodeData::ProcessingInstruction { .. } => {
-                eprintln!(
+                debug!(
                     "Ignoring processing instruction: children: {:?}",
                     node.children.borrow().len()
                 );
@@ -185,7 +193,7 @@ impl Walker {
 
     fn element(&mut self, name: &QualName, children: &[Handle]) -> Result<(), Error> {
         let localname = name.local.to_string();
-        // eprintln!("Start Element {:?}", name);
+        trace!("Start Element {:?}", name);
         self.statements.push(quote!(
                 target.start_element(#localname.into())?;
             ));
@@ -195,13 +203,13 @@ impl Walker {
         self.statements.push(quote!(
                 target.end_element(#localname.into())?;
             ));
-        // eprintln!("End Element {:?}", name);
+        trace!("End Element {:?}", name);
 
         Ok(())
     }
     fn text(&mut self, contents: &StrTendril) -> Result<(), Error> {
         let cdata = contents.to_string();
-        // eprintln!("Text {:?}", cdata);
+        trace!("Text {:?}", cdata);
         self.statements.push(quote!(
                 target.text(#cdata)?;
             ));

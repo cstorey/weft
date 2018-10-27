@@ -10,13 +10,6 @@ struct Walker {
     statements: Vec<TokenStream2>,
 }
 
-impl Walker {
-    fn into_body(self) -> TokenStream2 {
-        let mut body = TokenStream2::new();
-        body.extend(self.statements);
-        return body;
-    }
-}
 
 fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
     info!("Deriving implementation");
@@ -44,6 +37,12 @@ pub fn derive_impl(nodes: &[Handle], item: &syn::DeriveInput) -> Result<TokenStr
 }
 
 impl Walker {
+    fn into_body(self) -> TokenStream2 {
+        let mut body = TokenStream2::new();
+        body.extend(self.statements);
+        return body;
+    }
+
     fn dom(&mut self, node: &Handle) -> Result<(), Error> {
         match node.data {
             NodeData::Document => {

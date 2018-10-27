@@ -165,6 +165,8 @@ mod todo {
     #[derive(WeftTemplate)]
     #[template(path = "tests/content.html")]
     struct WithPolyContent<C> {
+        // Need a way to declare which type variables need to have `Renderable`
+        // constraints when we declare the struct Renderable impl.
         child: C,
     }
 }

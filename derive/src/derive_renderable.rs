@@ -10,6 +10,11 @@ struct Walker {
     statements: Vec<TokenStream2>,
 }
 
+#[derive(Default, Debug)]
+struct Directives<'a> {
+    replace_content: Option<TokenStream2>,
+    plain_attrs: Vec<&'a html5ever::Attribute>,
+}
 
 fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
     info!("Deriving implementation");
@@ -97,49 +102,16 @@ impl Walker {
         let localname = name.local.to_string();
         trace!("Start Element {:?}: {:?}", name, attrs);
 
-        let mut plain_attrs = Vec::new();
+        let directive = Directives::parse_from_attrs(attrs)?;
 
-        let mut replace_content = None;
-
-        for at in attrs {
-            match &*at.name.local {
-                "weft-replace" => {
-                    let replacement = at
-                        .value
-                        .as_ref()
-                        .parse::<TokenStream2>()
-                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
-                    replace_content = Some(replacement)
-                }
-                _ => plain_attrs.push(at),
-            }
-        }
-
-        if let Some(repl) = replace_content {
+        if let Some(repl) = directive.replace_content {
             let q = quote!(#repl.render_to(target)?;);
             self.statements.push(q);
         } else {
-            let attrs_quotes = plain_attrs.into_iter().map(|at| (at)).map(|at| {
-                let key_name: String = at.name.local.to_string();
-                let value: String = at.value.to_string();
-                quote!(::std::iter::once(&::weft::AttrPair::new(#key_name, #value)))
-            });
-
-            let attrs_q = attrs_quotes.fold(
-                quote!(::std::iter::empty()),
-                |prefix, it| quote!(#prefix.chain(#it)),
-            );
-            self.statements.push(quote!(
-                target.start_element_attrs(#localname.into(), #attrs_q)?;
-            ));
-
-            self.children(children)?;
-
-            self.statements.push(quote!(
-                target.end_element(#localname.into())?;
-            ));
-            trace!("End Element {:?}", name);
+            self.emit_element(&localname, &*directive.plain_attrs, children)?;
         }
+        trace!("End Element {:?}", name);
+
         Ok(())
     }
     fn text(&mut self, contents: &StrTendril) -> Result<(), Error> {
@@ -149,5 +121,54 @@ impl Walker {
                 target.text(#cdata)?;
             ));
         Ok(())
+    }
+
+    fn emit_element(
+        &mut self,
+        localname: &str,
+        attrs: &[&html5ever::Attribute],
+        children: &[Handle],
+    ) -> Result<(), Error> {
+        let attrs_quotes = attrs.iter().map(|at| at).map(|at| {
+            let key_name: String = at.name.local.to_string();
+            let value: String = at.value.to_string();
+            quote!(::std::iter::once(&::weft::AttrPair::new(#key_name, #value)))
+        });
+
+        let attrs_q = attrs_quotes.fold(
+            quote!(::std::iter::empty()),
+            |prefix, it| quote!(#prefix.chain(#it)),
+        );
+        self.statements.push(quote!(
+                target.start_element_attrs(#localname.into(), #attrs_q)?;
+            ));
+
+        self.children(children)?;
+
+        self.statements.push(quote!(
+                target.end_element(#localname.into())?;
+            ));
+        Ok(())
+    }
+}
+
+impl<'a> Directives<'a> {
+    fn parse_from_attrs(attrs: &'a [html5ever::Attribute]) -> Result<Self, Error> {
+        let mut it = Self::default();
+        for at in attrs {
+            match &*at.name.local {
+                "weft-replace" => {
+                    let replacement = at
+                        .value
+                        .as_ref()
+                        .parse::<TokenStream2>()
+                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    it.replace_content = Some(replacement)
+                }
+                _ => it.plain_attrs.push(&at),
+            }
+        }
+
+        Ok(it)
     }
 }

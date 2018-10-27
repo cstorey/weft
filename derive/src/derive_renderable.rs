@@ -11,6 +11,7 @@ struct Walker;
 #[derive(Default, Debug)]
 struct Directives<'a> {
     replacement: Option<TokenStream2>,
+    content: Option<TokenStream2>,
     conditional: Option<TokenStream2>,
     plain_attrs: Vec<&'a html5ever::Attribute>,
 }
@@ -107,6 +108,9 @@ impl Walker {
         let directive = Directives::parse_from_attrs(attrs)?;
         let res = if let Some(repl) = directive.replacement {
             quote!(#repl.render_to(target)?;)
+        } else if let Some(content) = directive.content {
+            let content = quote!(#content.render_to(target)?;);
+            self.emit_element(&localname, &*directive.plain_attrs, content)?
         } else {
             let content = self.children(children)?;
             self.emit_element(&localname, &*directive.plain_attrs, content)?
@@ -180,7 +184,14 @@ impl<'a> Directives<'a> {
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.conditional = Some(test)
                 }
-
+                "weft-content" => {
+                    let content = at
+                        .value
+                        .as_ref()
+                        .parse::<TokenStream2>()
+                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    it.content = Some(content)
+                }
                 _ => it.plain_attrs.push(&at),
             }
         }

@@ -63,7 +63,7 @@ struct Interpolatable<'a> {
 }
 
 #[test]
-fn should_interpolate_content_in_cdata() {
+fn should_support_replace_directive() {
     let view = Interpolatable { name: "Bob" };
 
     let s = render_to_string(view).expect("render_to_string");
@@ -77,7 +77,29 @@ fn should_interpolate_content_in_cdata() {
         expected
     )
 }
+#[derive(WeftTemplate)]
+#[template(path = "tests/content.html")]
+struct WithContent {
+    child: String,
+}
 
+#[test]
+fn should_support_content() {
+    let view = WithContent {
+        child: "Hello".into(),
+    };
+
+    let s = render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "<p>Hello</p>";
+    assert!(
+        s.contains(expected),
+        "String {:?} contains {:?}",
+        s,
+        expected
+    )
+}
 #[derive(WeftTemplate)]
 #[template(path = "tests/conditional.html")]
 struct Conditional {
@@ -113,4 +135,13 @@ fn should_include_when_conditional_true() {
         s,
         expected
     )
+}
+
+#[cfg(never)]
+mod todo {
+    #[derive(WeftTemplate)]
+    #[template(path = "tests/content.html")]
+    struct WithPolyContent<C> {
+        child: C,
+    }
 }

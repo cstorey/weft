@@ -1,7 +1,9 @@
+extern crate regex;
 extern crate weft;
 #[macro_use]
 extern crate weft_derive;
 
+use regex::*;
 use std::io;
 use weft::*;
 
@@ -34,5 +36,22 @@ fn should_not_include_enclosing_html_tags() {
         "String {:?} contains {:?}",
         s,
         unexpected
+    )
+}
+#[derive(WeftTemplate)]
+#[template(path = "tests/trivial_with_attrs.html")]
+struct TrivialAttrs;
+
+#[test]
+fn should_pass_through_attributes() {
+    let s = render_to_string(TrivialAttrs).expect("render_to_string");
+    println!("{}", s);
+
+    let matcher = Regex::new("class=[\"']foo[\"']").expect("Regex::new");
+    assert!(
+        matcher.find(&s).is_some(),
+        "String {:?} matches {:?}",
+        s,
+        matcher
     )
 }

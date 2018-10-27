@@ -25,7 +25,7 @@ use quote::ToTokens;
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we
     // don't know for sure that we're using the same `log` crate. So, just in case?
-    env_logger::init();
+    env_logger::try_init().unwrap_or_default();
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
     match make_template(&ast) {
         Ok(toks) => toks.into(),
@@ -59,7 +59,6 @@ fn make_template(item: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Er
 
 fn parse(path: &Path) -> Result<Vec<Handle>, Error> {
     info!("Using template from {:?}", path);
-    eprintln!("Using template from {:?}", path);
     let root_name = QualName::new(None, ns!(html), local_name!("html"));
     let dom = parse_fragment(RcDom::default(), Default::default(), root_name, Vec::new())
         .from_utf8()
@@ -166,8 +165,7 @@ impl Walker {
                 ref attrs,
                 ..
             } => {
-                debug!("Element: {:?}: {:?}", name, attrs);
-                self.element(name, &node.children.borrow())?;
+                self.element(name, &attrs.borrow(), &node.children.borrow())?;
             }
             NodeData::Text { ref contents } => {
                 self.text(&*contents.borrow())?;
@@ -196,11 +194,27 @@ impl Walker {
         Ok(())
     }
 
-    fn element(&mut self, name: &QualName, children: &[Handle]) -> Result<(), Error> {
+    fn element(
+        &mut self,
+        name: &QualName,
+        attrs: &[html5ever::Attribute],
+        children: &[Handle],
+    ) -> Result<(), Error> {
         let localname = name.local.to_string();
-        trace!("Start Element {:?}", name);
+        trace!("Start Element {:?}: {:?}", name, attrs);
+
+        let attrs_q = attrs
+            .iter()
+            .map(|at| {
+                let key_name: String = at.name.local.to_string();
+                let value: String = at.value.to_string();
+                quote!(::std::iter::once(&::weft::AttrPair::new(#key_name, #value)))
+            }).fold(
+                quote!(::std::iter::empty()),
+                |prefix, it| quote!(#prefix.chain(#it)),
+            );
         self.statements.push(quote!(
-                target.start_element(#localname.into())?;
+                target.start_element_attrs(#localname.into(), #attrs_q)?;
             ));
 
         self.children(children)?;

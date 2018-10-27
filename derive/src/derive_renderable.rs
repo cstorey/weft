@@ -176,14 +176,6 @@ impl<'a> Directives<'a> {
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.replacement = Some(replacement)
                 }
-                "weft-if" => {
-                    let test = at
-                        .value
-                        .as_ref()
-                        .parse::<TokenStream2>()
-                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
-                    it.conditional = Some(test)
-                }
                 "weft-content" => {
                     let content = at
                         .value
@@ -191,6 +183,14 @@ impl<'a> Directives<'a> {
                         .parse::<TokenStream2>()
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.content = Some(content)
+                }
+                "weft-if" => {
+                    let test = at
+                        .value
+                        .as_ref()
+                        .parse::<TokenStream2>()
+                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    it.conditional = Some(test)
                 }
                 _ => it.plain_attrs.push(&at),
             }

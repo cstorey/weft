@@ -13,6 +13,7 @@ struct Directives<'a> {
     replacement: Option<TokenStream2>,
     content: Option<TokenStream2>,
     conditional: Option<TokenStream2>,
+    iterator: Option<TokenStream2>,
     plain_attrs: Vec<&'a html5ever::Attribute>,
 }
 
@@ -116,6 +117,12 @@ impl Walker {
             self.emit_element(&localname, &*directive.plain_attrs, content)?
         };
 
+        let res = if let Some(iter) = directive.iterator {
+            quote!(for #iter { #res }; )
+        } else {
+            res
+        };
+
         let res = if let Some(test) = directive.conditional {
             quote!(if #test { #res }; )
         } else {
@@ -191,6 +198,14 @@ impl<'a> Directives<'a> {
                         .parse::<TokenStream2>()
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.conditional = Some(test)
+                }
+                "weft-for" => {
+                    let iterator = at
+                        .value
+                        .as_ref()
+                        .parse::<TokenStream2>()
+                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    it.iterator = Some(iterator)
                 }
                 _ => it.plain_attrs.push(&at),
             }

@@ -137,6 +137,29 @@ fn should_include_when_conditional_true() {
     )
 }
 
+#[derive(WeftTemplate)]
+#[template(path = "tests/for-in.html")]
+struct ForIn<'a> {
+    items: Vec<&'a str>,
+}
+#[test]
+fn should_support_iteration() {
+    let view = ForIn {
+        items: vec!["one", "two", "three"],
+    };
+
+    let s = render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = ["<p>one</p>", "<p>two</p>", "<p>three</p>"];
+    assert!(
+        expected.iter().all(|it| s.contains(it)),
+        "String {:?} should contain all of {:?}",
+        s,
+        expected
+    )
+}
+
 #[cfg(never)]
 mod todo {
     #[derive(WeftTemplate)]

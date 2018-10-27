@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use failure::{Error, ResultExt};
 use html5ever::parse_fragment;
 use html5ever::rcdom::{Handle, NodeData, RcDom};
-use html5ever::tendril::TendrilSink;
+use html5ever::tendril::{StrTendril, TendrilSink};
 use html5ever::QualName;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -145,25 +145,10 @@ fn walk_dom(statements: &mut Vec<TokenStream2>, node: &Handle) -> Result<(), Err
             );
         }
         NodeData::Element { ref name, .. } => {
-            let localname = name.local.to_string();
-            // eprintln!("Start Element {:?}", name);
-            statements.push(quote!(
-                target.start_element(#localname.into())?;
-            ));
-
-            walk_children(statements, &node.children.borrow())?;
-
-            statements.push(quote!(
-                target.end_element(#localname.into())?;
-            ));
-            // eprintln!("End Element {:?}", name);
+            walk_element(name, &node.children.borrow(), statements)?;
         }
         NodeData::Text { ref contents } => {
-            let cdata = contents.borrow().to_string();
-            // eprintln!("Text {:?}", cdata);
-            statements.push(quote!(
-                target.text(#cdata)?;
-            ))
+            walk_text(&*contents.borrow(), statements)?;
         }
         NodeData::Comment { .. } => {
             eprintln!(
@@ -186,5 +171,34 @@ fn walk_children(statements: &mut Vec<TokenStream2>, nodes: &[Handle]) -> Result
         walk_dom(statements, &child)?;
     }
 
+    Ok(())
+}
+
+fn walk_element(
+    name: &QualName,
+    children: &[Handle],
+    statements: &mut Vec<TokenStream2>,
+) -> Result<(), Error> {
+    let localname = name.local.to_string();
+    // eprintln!("Start Element {:?}", name);
+    statements.push(quote!(
+                target.start_element(#localname.into())?;
+            ));
+
+    walk_children(statements, children)?;
+
+    statements.push(quote!(
+                target.end_element(#localname.into())?;
+            ));
+    // eprintln!("End Element {:?}", name);
+
+    Ok(())
+}
+fn walk_text(contents: &StrTendril, statements: &mut Vec<TokenStream2>) -> Result<(), Error> {
+    let cdata = contents.to_string();
+    // eprintln!("Text {:?}", cdata);
+    statements.push(quote!(
+                target.text(#cdata)?;
+            ));
     Ok(())
 }

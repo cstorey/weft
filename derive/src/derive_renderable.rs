@@ -104,17 +104,20 @@ impl Walker {
 
         for at in attrs {
             match &*at.name.local {
-                "weft-replace" => replace_content = Some(at.value.to_string()),
+                "weft-replace" => {
+                    let replacement = at
+                        .value
+                        .as_ref()
+                        .parse::<TokenStream2>()
+                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    replace_content = Some(replacement)
+                }
                 _ => plain_attrs.push(at),
             }
         }
 
         if let Some(repl) = replace_content {
-            let val = repl
-                .parse::<TokenStream2>()
-                .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
-            let q = quote!(#val.render_to(target)?;);
-
+            let q = quote!(#repl.render_to(target)?;);
             self.statements.push(q);
         } else {
             let attrs_quotes = plain_attrs.into_iter().map(|at| (at)).map(|at| {

@@ -3,6 +3,7 @@ use html5ever::rcdom::{Handle, NodeData};
 use html5ever::tendril::StrTendril;
 use html5ever::QualName;
 use proc_macro2::TokenStream as TokenStream2;
+use syn;
 
 #[derive(Default, Debug)]
 struct Walker {
@@ -17,11 +18,29 @@ impl Walker {
     }
 }
 
-pub fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
+fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
     info!("Deriving implementation");
     let mut walker = Walker::default();
     walker.children(nodes)?;
     Ok(walker.into_body())
+}
+
+pub fn derive_impl(nodes: &[Handle], item: &syn::DeriveInput) -> Result<TokenStream2, Error> {
+    let impl_body = template_fn_body(nodes)?;
+    debug!("Fn body: {}", impl_body);
+
+    let ident = &item.ident;
+    let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
+
+    let res = quote! {
+        impl #impl_generics ::weft::Renderable for #ident #ty_generics #where_clause {
+            fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
+                #impl_body;
+                Ok(())
+            }
+        }
+    };
+    Ok(res)
 }
 
 impl Walker {

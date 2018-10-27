@@ -43,22 +43,9 @@ fn make_template(item: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Er
     let path = PathBuf::from(root_dir).join(template);
     let dom = parse(&path)?;
 
-    let impl_body = template_fn_body(&dom)?;
+    let impl_body = derive_impl(&dom, item)?;
 
-    debug!("Fn body: {}", impl_body);
-
-    let ident = &item.ident;
-    let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
-
-    let x = quote! {
-        impl #impl_generics ::weft::Renderable for #ident #ty_generics #where_clause {
-            fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
-                #impl_body;
-                Ok(())
-            }
-        }
-    };
-    Ok(x.into_token_stream())
+    Ok(impl_body.into_token_stream())
 }
 
 fn parse(path: &Path) -> Result<Vec<Handle>, Error> {

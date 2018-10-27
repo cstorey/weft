@@ -35,7 +35,10 @@ pub fn derive_template(input: TokenStream) -> TokenStream {
 
 fn make_template(item: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
     let template = find_template(item).context("find template")?;
-    let root_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or(".".into());
+    let root_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
+        warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
+        ".".into()
+    });
     let path = PathBuf::from(root_dir).join(template);
     let dom = parse(&path)?;
 

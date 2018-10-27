@@ -6,9 +6,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use syn;
 
 #[derive(Default, Debug)]
-struct Walker {
-    statements: Vec<TokenStream2>,
-}
+struct Walker;
 
 #[derive(Default, Debug)]
 struct Directives<'a> {
@@ -17,13 +15,12 @@ struct Directives<'a> {
 }
 
 fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
-    info!("Deriving implementation");
-    let mut walker = Walker::default();
-    walker.children(nodes)?;
-    Ok(walker.into_body())
+    let walker = Walker::default();
+    Ok(walker.children(nodes)?)
 }
 
 pub fn derive_impl(nodes: &[Handle], item: &syn::DeriveInput) -> Result<TokenStream2, Error> {
+    info!("Deriving implementation for {}", item.ident);
     let impl_body = template_fn_body(nodes)?;
     debug!("Fn body: {}", impl_body);
 
@@ -42,93 +39,95 @@ pub fn derive_impl(nodes: &[Handle], item: &syn::DeriveInput) -> Result<TokenStr
 }
 
 impl Walker {
-    fn into_body(self) -> TokenStream2 {
-        let mut body = TokenStream2::new();
-        body.extend(self.statements);
-        return body;
-    }
-
-    fn dom(&mut self, node: &Handle) -> Result<(), Error> {
+    fn dom(&self, node: &Handle) -> Result<TokenStream2, Error> {
         match node.data {
             NodeData::Document => {
-                self.children(&node.children.borrow())?;
-            }
-            NodeData::Doctype { .. } => {
-                debug!(
-                    "Ignoring doctype: children: {:?}",
-                    node.children.borrow().len()
-                );
+                let ts = self.children(&node.children.borrow())?;
+                trace!("Document => {}", ts);
+                Ok(ts)
             }
             NodeData::Element {
                 ref name,
                 ref attrs,
                 ..
             } => {
-                self.element(name, &attrs.borrow(), &node.children.borrow())?;
+                let ts = self.element(name, &attrs.borrow(), &node.children.borrow())?;
+                trace!("Element: {:?}:{:?}", name, attrs);
+                trace!("Element => {}", ts);
+                Ok(ts)
             }
             NodeData::Text { ref contents } => {
-                self.text(&*contents.borrow())?;
+                let ts = self.text(&*contents.borrow())?;
+                trace!("Text => {}", ts);
+                Ok(ts)
+            }
+            NodeData::Doctype { .. } => {
+                debug!(
+                    "Ignoring doctype: children: {:?}",
+                    node.children.borrow().len()
+                );
+                Ok(TokenStream2::default())
             }
             NodeData::Comment { .. } => {
                 debug!(
                     "Ignoring comment: children: {:?}",
                     node.children.borrow().len()
                 );
+                Ok(TokenStream2::default())
             }
             NodeData::ProcessingInstruction { .. } => {
                 debug!(
                     "Ignoring processing instruction: children: {:?}",
                     node.children.borrow().len()
                 );
+                Ok(TokenStream2::default())
             }
         }
-        Ok(())
     }
 
-    fn children(&mut self, nodes: &[Handle]) -> Result<(), Error> {
+    fn children(&self, nodes: &[Handle]) -> Result<TokenStream2, Error> {
+        let mut res = TokenStream2::new();
         for child in nodes.iter() {
-            self.dom(&child)?;
+            res.extend(self.dom(&child)?);
         }
 
-        Ok(())
+        Ok(res)
     }
 
     fn element(
-        &mut self,
+        &self,
         name: &QualName,
         attrs: &[html5ever::Attribute],
         children: &[Handle],
-    ) -> Result<(), Error> {
+    ) -> Result<TokenStream2, Error> {
         let localname = name.local.to_string();
         trace!("Start Element {:?}: {:?}", name, attrs);
 
         let directive = Directives::parse_from_attrs(attrs)?;
 
-        if let Some(repl) = directive.replace_content {
-            let q = quote!(#repl.render_to(target)?;);
-            self.statements.push(q);
+        let res = if let Some(repl) = directive.replace_content {
+            quote!(#repl.render_to(target)?;)
         } else {
-            self.emit_element(&localname, &*directive.plain_attrs, children)?;
-        }
+            self.emit_element(&localname, &*directive.plain_attrs, children)?
+        };
         trace!("End Element {:?}", name);
 
-        Ok(())
+        Ok(res)
     }
-    fn text(&mut self, contents: &StrTendril) -> Result<(), Error> {
+    fn text(&self, contents: &StrTendril) -> Result<TokenStream2, Error> {
         let cdata = contents.to_string();
         trace!("Text {:?}", cdata);
-        self.statements.push(quote!(
+        Ok(quote!(
                 target.text(#cdata)?;
-            ));
-        Ok(())
+            ))
     }
 
     fn emit_element(
-        &mut self,
+        &self,
         localname: &str,
         attrs: &[&html5ever::Attribute],
         children: &[Handle],
-    ) -> Result<(), Error> {
+    ) -> Result<TokenStream2, Error> {
         let attrs_quotes = attrs.iter().map(|at| at).map(|at| {
             let key_name: String = at.name.local.to_string();
             let value: String = at.value.to_string();
@@ -139,16 +138,17 @@ impl Walker {
             quote!(::std::iter::empty()),
             |prefix, it| quote!(#prefix.chain(#it)),
         );
-        self.statements.push(quote!(
+        let mut statements = TokenStream2::new();
+        statements.extend(quote!(
                 target.start_element_attrs(#localname.into(), #attrs_q)?;
             ));
 
-        self.children(children)?;
+        statements.extend(self.children(children)?);
 
-        self.statements.push(quote!(
+        statements.extend(quote!(
                 target.end_element(#localname.into())?;
             ));
-        Ok(())
+        Ok(statements)
     }
 }
 

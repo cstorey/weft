@@ -108,7 +108,8 @@ impl Walker {
         let res = if let Some(repl) = directive.replace_content {
             quote!(#repl.render_to(target)?;)
         } else {
-            self.emit_element(&localname, &*directive.plain_attrs, children)?
+            let content = self.children(children)?;
+            self.emit_element(&localname, &*directive.plain_attrs, content)?
         };
 
         let res = if let Some(test) = directive.conditional {
@@ -132,7 +133,7 @@ impl Walker {
         &self,
         localname: &str,
         attrs: &[&html5ever::Attribute],
-        children: &[Handle],
+        content: TokenStream2,
     ) -> Result<TokenStream2, Error> {
         let attrs_quotes = attrs.iter().map(|at| at).map(|at| {
             let key_name: String = at.name.local.to_string();
@@ -149,7 +150,7 @@ impl Walker {
                 target.start_element_attrs(#localname.into(), #attrs_q)?;
             ));
 
-        statements.extend(self.children(children)?);
+        statements.extend(content);
 
         statements.extend(quote!(
                 target.end_element(#localname.into())?;

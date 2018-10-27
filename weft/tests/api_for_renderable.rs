@@ -56,3 +56,24 @@ fn should_render_attrs() {
         matcher
     )
 }
+
+#[test]
+fn render_supports_builtins() {
+    struct TrivialExample;
+    // This simulates what a template of the form `<p>Hello</p>` should compile to.
+    impl Renderable for TrivialExample {
+        fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
+            "Hello world!".render_to(target)?;
+            Ok(())
+        }
+    }
+
+    let s = render_to_string(TrivialExample).expect("render_to_string");
+    let expected = "Hello world!";
+    assert!(
+        s.contains(expected),
+        "String {:?} contains {:?}",
+        s,
+        expected
+    );
+}

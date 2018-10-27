@@ -51,7 +51,7 @@ fn make_template(item: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Er
 
     let x = quote! {
         impl #impl_generics ::weft::Renderable for #ident #ty_generics #where_clause {
-            fn render_to<T: RenderTarget>(&self, mut target: T) -> Result<(), io::Error> {
+            fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
                 #impl_body;
                 Ok(())
             }

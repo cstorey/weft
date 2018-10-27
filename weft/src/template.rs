@@ -40,7 +40,7 @@ pub trait RenderTarget {
     fn end_element(&mut self, name: QName) -> Result<(), io::Error>;
 }
 pub trait Renderable {
-    fn render_to<T: RenderTarget>(&self, target: T) -> Result<(), io::Error>;
+    fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error>;
 }
 
 struct Html5Wrapper<R> {
@@ -79,7 +79,7 @@ impl<R: Renderable> html5ever::serialize::Serialize for Html5Wrapper<R> {
     where
         S: html5ever::serialize::Serializer,
     {
-        self.inner.render_to(Html5Ser(serializer))?;
+        self.inner.render_to(&mut Html5Ser(serializer))?;
         Ok(())
     }
 }

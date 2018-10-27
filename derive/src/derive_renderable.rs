@@ -10,7 +10,7 @@ struct Walker;
 
 #[derive(Default, Debug)]
 struct Directives<'a> {
-    replace_content: Option<TokenStream2>,
+    replacement: Option<TokenStream2>,
     conditional: Option<TokenStream2>,
     plain_attrs: Vec<&'a html5ever::Attribute>,
 }
@@ -105,7 +105,7 @@ impl Walker {
         trace!("Start Element {:?}: {:?}", name, attrs);
 
         let directive = Directives::parse_from_attrs(attrs)?;
-        let res = if let Some(repl) = directive.replace_content {
+        let res = if let Some(repl) = directive.replacement {
             quote!(#repl.render_to(target)?;)
         } else {
             let content = self.children(children)?;
@@ -170,7 +170,7 @@ impl<'a> Directives<'a> {
                         .as_ref()
                         .parse::<TokenStream2>()
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
-                    it.replace_content = Some(replacement)
+                    it.replacement = Some(replacement)
                 }
                 "weft-if" => {
                     let test = at

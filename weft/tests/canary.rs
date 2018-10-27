@@ -55,3 +55,25 @@ fn should_pass_through_attributes() {
         matcher
     )
 }
+
+#[derive(WeftTemplate)]
+#[template(path = "tests/interpolatable.html")]
+struct Interpolatable<'a> {
+    name: &'a str,
+}
+
+#[test]
+fn should_interpolate_content_in_cdata() {
+    let view = Interpolatable { name: "Bob" };
+
+    let s = render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "My name is Bob";
+    assert!(
+        s.contains(expected),
+        "String {:?} contains {:?}",
+        s,
+        expected
+    )
+}

@@ -1,4 +1,5 @@
 use html5ever;
+use html5ever::QualName;
 use std::io;
 use std::iter;
 
@@ -23,8 +24,18 @@ impl QName {
     }
 }
 
+pub struct AttrPair {
+    name: QualName,
+    value: String,
+}
+
 pub trait RenderTarget {
     fn start_element(&mut self, name: QName) -> Result<(), io::Error>;
+    fn start_element_attrs<'a, I: IntoIterator<Item = &'a AttrPair>>(
+        &mut self,
+        name: QName,
+        attrs: I,
+    ) -> Result<(), io::Error>;
     fn text(&mut self, content: &str) -> Result<(), io::Error>;
     fn end_element(&mut self, name: QName) -> Result<(), io::Error>;
 }
@@ -40,6 +51,16 @@ struct Html5Ser<'a, T: 'a>(&'a mut T);
 impl<'a, T: 'a + html5ever::serialize::Serializer> RenderTarget for Html5Ser<'a, T> {
     fn start_element(&mut self, name: QName) -> Result<(), io::Error> {
         self.0.start_elem(name.as_qual_name(), iter::empty())
+    }
+    fn start_element_attrs<'attr, I: IntoIterator<Item = &'attr AttrPair>>(
+        &mut self,
+        name: QName,
+        attrs: I,
+    ) -> Result<(), io::Error> {
+        self.0.start_elem(
+            name.as_qual_name(),
+            attrs.into_iter().map(|a| (&a.name, &*a.value)),
+        )
     }
     fn text(&mut self, content: &str) -> Result<(), io::Error> {
         self.0.write_text(content)
@@ -60,6 +81,16 @@ impl<R: Renderable> html5ever::serialize::Serialize for Html5Wrapper<R> {
     {
         self.inner.render_to(Html5Ser(serializer))?;
         Ok(())
+    }
+}
+
+impl AttrPair {
+    pub fn new(local_name: &str, value: &str) -> Self {
+        let qual = QualName::new(None, ns!(), html5ever::LocalName::from(local_name));
+        AttrPair {
+            name: qual,
+            value: value.to_string(),
+        }
     }
 }
 

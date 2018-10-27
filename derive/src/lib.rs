@@ -161,7 +161,12 @@ impl Walker {
                     node.children.borrow().len()
                 );
             }
-            NodeData::Element { ref name, .. } => {
+            NodeData::Element {
+                ref name,
+                ref attrs,
+                ..
+            } => {
+                debug!("Element: {:?}: {:?}", name, attrs);
                 self.element(name, &node.children.borrow())?;
             }
             NodeData::Text { ref contents } => {

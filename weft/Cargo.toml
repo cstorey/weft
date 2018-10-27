@@ -6,4 +6,9 @@ version = "0.1.0"
 [dependencies]
 html5ever = "0.22.3"
 markup5ever = "0.7.3"
-weft_derive = { path = "../derive" }
+
+[dependencies.weft_derive]
+path = "../derive"
+
+[dev-dependencies]
+regex = "1.0.5"

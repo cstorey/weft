@@ -122,83 +122,89 @@ fn find_template(item: &syn::DeriveInput) -> Result<String, Error> {
     Ok(path)
 }
 
+#[derive(Default, Debug)]
+struct Walker {
+    statements: Vec<TokenStream2>,
+}
+
+impl Walker {
+    fn into_body(self) -> TokenStream2 {
+        let mut body = TokenStream2::new();
+        body.extend(self.statements);
+        return body;
+    }
+}
+
 fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
-    let mut statements = Vec::<TokenStream2>::new();
-
-    walk_children(&mut statements, nodes)?;
-
-    let mut body = TokenStream2::new();
-    body.extend(statements);
-
-    Ok(body)
+    let mut walker = Walker::default();
+    walker.children(nodes)?;
+    Ok(walker.into_body())
 }
 
-fn walk_dom(statements: &mut Vec<TokenStream2>, node: &Handle) -> Result<(), Error> {
-    match node.data {
-        NodeData::Document => {
-            walk_children(statements, &node.children.borrow())?;
+impl Walker {
+    fn dom(&mut self, node: &Handle) -> Result<(), Error> {
+        match node.data {
+            NodeData::Document => {
+                self.children(&node.children.borrow())?;
+            }
+            NodeData::Doctype { .. } => {
+                eprintln!(
+                    "Ignoring doctype: children: {:?}",
+                    node.children.borrow().len()
+                );
+            }
+            NodeData::Element { ref name, .. } => {
+                self.element(name, &node.children.borrow())?;
+            }
+            NodeData::Text { ref contents } => {
+                self.text(&*contents.borrow())?;
+            }
+            NodeData::Comment { .. } => {
+                eprintln!(
+                    "Ignoring comment: children: {:?}",
+                    node.children.borrow().len()
+                );
+            }
+            NodeData::ProcessingInstruction { .. } => {
+                eprintln!(
+                    "Ignoring processing instruction: children: {:?}",
+                    node.children.borrow().len()
+                );
+            }
         }
-        NodeData::Doctype { .. } => {
-            eprintln!(
-                "Ignoring doctype: children: {:?}",
-                node.children.borrow().len()
-            );
-        }
-        NodeData::Element { ref name, .. } => {
-            walk_element(name, &node.children.borrow(), statements)?;
-        }
-        NodeData::Text { ref contents } => {
-            walk_text(&*contents.borrow(), statements)?;
-        }
-        NodeData::Comment { .. } => {
-            eprintln!(
-                "Ignoring comment: children: {:?}",
-                node.children.borrow().len()
-            );
-        }
-        NodeData::ProcessingInstruction { .. } => {
-            eprintln!(
-                "Ignoring processing instruction: children: {:?}",
-                node.children.borrow().len()
-            );
-        }
-    }
-    Ok(())
-}
-
-fn walk_children(statements: &mut Vec<TokenStream2>, nodes: &[Handle]) -> Result<(), Error> {
-    for child in nodes.iter() {
-        walk_dom(statements, &child)?;
+        Ok(())
     }
 
-    Ok(())
-}
+    fn children(&mut self, nodes: &[Handle]) -> Result<(), Error> {
+        for child in nodes.iter() {
+            self.dom(&child)?;
+        }
 
-fn walk_element(
-    name: &QualName,
-    children: &[Handle],
-    statements: &mut Vec<TokenStream2>,
-) -> Result<(), Error> {
-    let localname = name.local.to_string();
-    // eprintln!("Start Element {:?}", name);
-    statements.push(quote!(
+        Ok(())
+    }
+
+    fn element(&mut self, name: &QualName, children: &[Handle]) -> Result<(), Error> {
+        let localname = name.local.to_string();
+        // eprintln!("Start Element {:?}", name);
+        self.statements.push(quote!(
                 target.start_element(#localname.into())?;
             ));
 
-    walk_children(statements, children)?;
+        self.children(children)?;
 
-    statements.push(quote!(
+        self.statements.push(quote!(
                 target.end_element(#localname.into())?;
             ));
-    // eprintln!("End Element {:?}", name);
+        // eprintln!("End Element {:?}", name);
 
-    Ok(())
-}
-fn walk_text(contents: &StrTendril, statements: &mut Vec<TokenStream2>) -> Result<(), Error> {
-    let cdata = contents.to_string();
-    // eprintln!("Text {:?}", cdata);
-    statements.push(quote!(
+        Ok(())
+    }
+    fn text(&mut self, contents: &StrTendril) -> Result<(), Error> {
+        let cdata = contents.to_string();
+        // eprintln!("Text {:?}", cdata);
+        self.statements.push(quote!(
                 target.text(#cdata)?;
             ));
-    Ok(())
+        Ok(())
+    }
 }

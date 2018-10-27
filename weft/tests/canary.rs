@@ -18,7 +18,7 @@ fn should_render_trivial_example() {
         }
     }
 
-    let s = render_to_string(TrivialExample).expect("render_writer");
+    let s = render_to_string(TrivialExample).expect("render_to_string");
     let expected = "<p>Hello</p>";
     assert!(
         s.contains(expected),
@@ -34,7 +34,7 @@ struct TrivialMarkup;
 
 #[test]
 fn should_derive_trivial_from_markup() {
-    let s = render_to_string(TrivialMarkup).expect("render_writer");
+    let s = render_to_string(TrivialMarkup).expect("render_to_string");
     println!("{}", s);
 
     let expected = "<div>Trivial</div>";
@@ -48,7 +48,7 @@ fn should_derive_trivial_from_markup() {
 
 #[test]
 fn should_not_include_enclosing_html_tags() {
-    let s = render_to_string(TrivialMarkup).expect("render_writer");
+    let s = render_to_string(TrivialMarkup).expect("render_to_string");
     println!("{}", s);
 
     let unexpected = "<html>";

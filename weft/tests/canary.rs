@@ -4,7 +4,6 @@ extern crate weft;
 extern crate weft_derive;
 
 use regex::*;
-use weft::*;
 
 #[derive(WeftTemplate)]
 #[template(path = "tests/trivial.html")]
@@ -12,7 +11,7 @@ struct TrivialMarkup;
 
 #[test]
 fn should_derive_trivial_from_markup() {
-    let s = render_to_string(TrivialMarkup).expect("render_to_string");
+    let s = weft::render_to_string(TrivialMarkup).expect("render_to_string");
     println!("{}", s);
 
     let expected = "<div>Trivial</div>";
@@ -26,7 +25,7 @@ fn should_derive_trivial_from_markup() {
 
 #[test]
 fn should_not_include_enclosing_html_tags() {
-    let s = render_to_string(TrivialMarkup).expect("render_to_string");
+    let s = weft::render_to_string(TrivialMarkup).expect("render_to_string");
     println!("{}", s);
 
     let unexpected = "<html>";
@@ -43,7 +42,7 @@ struct TrivialAttrs;
 
 #[test]
 fn should_pass_through_attributes() {
-    let s = render_to_string(TrivialAttrs).expect("render_to_string");
+    let s = weft::render_to_string(TrivialAttrs).expect("render_to_string");
     println!("{}", s);
 
     let matcher = Regex::new("class=[\"']foo[\"']").expect("Regex::new");
@@ -65,7 +64,7 @@ struct Interpolatable<'a> {
 fn should_support_replace_directive() {
     let view = Interpolatable { name: "Bob" };
 
-    let s = render_to_string(view).expect("render_to_string");
+    let s = weft::render_to_string(view).expect("render_to_string");
     println!("{}", s);
 
     let expected = "My name is Bob";
@@ -88,7 +87,7 @@ fn should_support_content() {
         child: "Hello".into(),
     };
 
-    let s = render_to_string(view).expect("render_to_string");
+    let s = weft::render_to_string(view).expect("render_to_string");
     println!("{}", s);
 
     let expected = "<p>Hello</p>";
@@ -108,7 +107,7 @@ struct Conditional {
 fn should_strip_when_conditional_false() {
     let view = Conditional { enabled: false };
 
-    let s = render_to_string(view).expect("render_to_string");
+    let s = weft::render_to_string(view).expect("render_to_string");
     println!("{}", s);
 
     let unexpected = "I am enabled";
@@ -124,7 +123,7 @@ fn should_strip_when_conditional_false() {
 fn should_include_when_conditional_true() {
     let view = Conditional { enabled: true };
 
-    let s = render_to_string(view).expect("render_to_string");
+    let s = weft::render_to_string(view).expect("render_to_string");
     println!("{}", s);
 
     let expected = "I am enabled";
@@ -147,7 +146,7 @@ fn should_support_iteration() {
         items: vec!["one", "two", "three"],
     };
 
-    let s = render_to_string(view).expect("render_to_string");
+    let s = weft::render_to_string(view).expect("render_to_string");
     println!("{}", s);
 
     let expected = ["<p>one</p>", "<p>two</p>", "<p>three</p>"];

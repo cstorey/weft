@@ -43,6 +43,12 @@ pub trait Renderable {
     fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error>;
 }
 
+impl<'a, R: Renderable> Renderable for &'a R {
+    fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
+        (**self).render_to(target)
+    }
+}
+
 struct Html5Wrapper<R> {
     inner: R,
 }

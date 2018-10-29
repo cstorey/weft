@@ -21,7 +21,7 @@ fn render_to_fn(nodes: &[Handle]) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
     let impl_body = walker.children(nodes)?;
     Ok(quote! {
-            fn render_to<__weft_R: ::weft::RenderTarget>(&self, target: &mut __weft_R) -> Result<(), ::std::io::Error> {
+            fn render_to<__weft_R: ::weft::RenderTarget>(&self, __weft_target: &mut __weft_R) -> Result<(), ::std::io::Error> {
                 #impl_body;
                 Ok(())
             }
@@ -111,9 +111,9 @@ impl Walker {
 
         let directive = Directives::parse_from_attrs(attrs)?;
         let res = if let Some(repl) = directive.replacement {
-            quote!(#repl.render_to(target)?;)
+            quote!(#repl.render_to(__weft_target)?;)
         } else if let Some(content) = directive.content {
-            let content = quote!(#content.render_to(target)?;);
+            let content = quote!(#content.render_to(__weft_target)?;);
             self.emit_element(&localname, &*directive.plain_attrs, content)?
         } else {
             let content = self.children(children)?;
@@ -139,7 +139,7 @@ impl Walker {
         let cdata = contents.to_string();
         trace!("Text {:?}", cdata);
         Ok(quote!(
-                target.text(#cdata)?;
+                __weft_target.text(#cdata)?;
             ))
     }
 
@@ -161,13 +161,13 @@ impl Walker {
         );
         let mut statements = TokenStream2::new();
         statements.extend(quote!(
-                target.start_element_attrs(#localname.into(), #attrs_q)?;
+                __weft_target.start_element_attrs(#localname.into(), #attrs_q)?;
             ));
 
         statements.extend(content);
 
         statements.extend(quote!(
-                target.end_element(#localname.into())?;
+                __weft_target.end_element(#localname.into())?;
             ));
         Ok(statements)
     }

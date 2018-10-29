@@ -4,7 +4,6 @@ extern crate weft;
 extern crate weft_derive;
 
 use regex::*;
-use std::io;
 use weft::*;
 
 #[derive(WeftTemplate)]

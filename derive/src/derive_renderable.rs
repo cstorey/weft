@@ -32,7 +32,7 @@ pub fn derive_impl(nodes: &[Handle], item: &syn::DeriveInput) -> Result<TokenStr
 
     let res = quote! {
         impl #impl_generics ::weft::Renderable for #ident #ty_generics #where_clause {
-            fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
+            fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), ::std::io::Error> {
                 #impl_body;
                 Ok(())
             }

@@ -17,25 +17,28 @@ struct Directives<'a> {
     plain_attrs: Vec<&'a html5ever::Attribute>,
 }
 
-fn template_fn_body(nodes: &[Handle]) -> Result<TokenStream2, Error> {
+fn render_to_fn(nodes: &[Handle]) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
-    Ok(walker.children(nodes)?)
+    let impl_body = walker.children(nodes)?;
+    Ok(quote! {
+            fn render_to<__weft_R: ::weft::RenderTarget>(&self, target: &mut __weft_R) -> Result<(), ::std::io::Error> {
+                #impl_body;
+                Ok(())
+            }
+    })
 }
 
 pub fn derive_impl(nodes: &[Handle], item: &syn::DeriveInput) -> Result<TokenStream2, Error> {
     info!("Deriving implementation for {}", item.ident);
-    let impl_body = template_fn_body(nodes)?;
-    debug!("Fn body: {}", impl_body);
+    let render_to_fn_impl = render_to_fn(nodes)?;
+    debug!("Fn body: {}", render_to_fn_impl);
 
     let ident = &item.ident;
     let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
 
     let res = quote! {
         impl #impl_generics ::weft::Renderable for #ident #ty_generics #where_clause {
-            fn render_to<__weft_R: ::weft::RenderTarget>(&self, target: &mut __weft_R) -> Result<(), ::std::io::Error> {
-                #impl_body;
-                Ok(())
-            }
+            #render_to_fn_impl
         }
     };
     Ok(res)

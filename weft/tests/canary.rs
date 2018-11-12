@@ -158,13 +158,26 @@ fn should_support_iteration() {
     )
 }
 
-#[cfg(never)]
-mod todo {
-    #[derive(WeftTemplate)]
-    #[template(path = "tests/content.html")]
-    struct WithPolyContent<C> {
-        // Need a way to declare which type variables need to have `Renderable`
-        // constraints when we declare the struct Renderable impl.
-        child: C,
-    }
+#[derive(WeftTemplate)]
+#[template(path = "tests/content.html",)]
+struct WithPolyContent<C> {
+    // Need a way to declare which type variables need to have `Renderable`
+    // constraints when we declare the struct Renderable impl.
+    child: C,
+}
+
+#[test]
+fn should_support_polymorphism() {
+    let view = WithPolyContent { child: "hello" };
+
+    let s = weft::render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "<p>hello</p>";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
 }

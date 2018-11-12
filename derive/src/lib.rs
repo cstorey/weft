@@ -6,6 +6,7 @@ extern crate failure;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
+#[macro_use]
 extern crate syn;
 #[macro_use]
 extern crate html5ever;
@@ -28,14 +29,16 @@ pub fn derive_template(input: TokenStream) -> TokenStream {
     // don't know for sure that we're using the same `log` crate. So, just in case?
     env_logger::try_init().unwrap_or_default();
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
-    match make_template(&ast) {
+    match make_template(ast) {
         Ok(toks) => toks.into(),
         Err(err) => panic!("Error: {:?}", err),
     }
 }
 
-fn make_template(item: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
-    let template = find_template(item).context("find template")?;
+fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
+    info!("Deriving for {}", item.ident);
+    trace!("{:#?}", item);
+    let template = find_template(&item).context("find template")?;
     let root_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
         warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
         ".".into()
@@ -87,6 +90,7 @@ fn find_template(item: &syn::DeriveInput) -> Result<String, Error> {
         .attrs
         .iter()
         .filter_map(|a| a.interpret_meta())
+        .inspect(|a| info!("Attribute: {:#?}", a))
         .find(|a| a.name() == "template")
         .ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
 
@@ -108,7 +112,7 @@ fn find_template(item: &syn::DeriveInput) -> Result<String, Error> {
                                 "template path attribute should be a string",
                             ));
                         },
-                        _ => (),
+                        _ => warn!("Unrecognised attribute {:#?}", pair),
                     }
                 }
             }

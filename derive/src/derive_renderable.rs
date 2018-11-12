@@ -28,14 +28,32 @@ fn render_to_fn(nodes: &[Handle]) -> Result<TokenStream2, Error> {
     })
 }
 
-pub fn derive_impl(nodes: &[Handle], item: &syn::DeriveInput) -> Result<TokenStream2, Error> {
+pub fn derive_impl(nodes: &[Handle], mut item: syn::DeriveInput) -> Result<TokenStream2, Error> {
     info!("Deriving implementation for {}", item.ident);
     let render_to_fn_impl = render_to_fn(nodes)?;
     debug!("Fn body: {}", render_to_fn_impl);
 
-    let ident = &item.ident;
+    info!("Generics before: {:#?}", item.generics);
+    let bounds = item
+        .generics
+        .type_params()
+        .map(|p| {
+            let name = &p.ident;
+            parse_quote!(#name : ::weft::Renderable)
+        }).collect::<Vec<syn::WherePredicate>>();
+
+    {
+        let where_clause = item
+            .generics
+            .where_clause
+            .get_or_insert(parse_quote!(where));
+        for clause in bounds {
+            where_clause.predicates.push(clause);
+        }
+    }
     let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
 
+    let ident = &item.ident;
     let res = quote! {
         impl #impl_generics ::weft::Renderable for #ident #ty_generics #where_clause {
             #render_to_fn_impl

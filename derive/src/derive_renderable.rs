@@ -13,8 +13,15 @@ struct Directives<'a> {
     replacement: Option<syn::Expr>,
     content: Option<syn::Expr>,
     conditional: Option<syn::Expr>,
-    iterator: Option<TokenStream2>,
+    iterator: Option<IteratorDecl>,
     plain_attrs: Vec<&'a html5ever::Attribute>,
+}
+
+#[derive(Debug)]
+struct IteratorDecl {
+    pattern: syn::Pat,
+    in_: Token![in],
+    expr: syn::Expr,
 }
 
 fn render_to_fn(nodes: &[Handle]) -> Result<TokenStream2, Error> {
@@ -212,10 +219,7 @@ impl<'a> Directives<'a> {
                     it.conditional = Some(test)
                 }
                 "weft-for" => {
-                    let iterator = at
-                        .value
-                        .as_ref()
-                        .parse::<TokenStream2>()
+                    let iterator = syn::parse_str(at.value.as_ref())
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.iterator = Some(iterator)
                 }
@@ -224,5 +228,22 @@ impl<'a> Directives<'a> {
         }
 
         Ok(it)
+    }
+}
+
+impl quote::ToTokens for IteratorDecl {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        self.pattern.to_tokens(tokens);
+        self.in_.to_tokens(tokens);
+        self.expr.to_tokens(tokens);
+    }
+}
+
+impl syn::parse::Parse for IteratorDecl {
+    fn parse(buf: &syn::parse::ParseBuffer) -> Result<Self, syn::parse::Error> {
+        let pattern = buf.parse()?;
+        let in_ = buf.parse()?;
+        let expr = buf.parse()?;
+        Ok(IteratorDecl { pattern, in_, expr })
     }
 }

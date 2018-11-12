@@ -10,9 +10,9 @@ struct Walker;
 
 #[derive(Default, Debug)]
 struct Directives<'a> {
-    replacement: Option<TokenStream2>,
-    content: Option<TokenStream2>,
-    conditional: Option<TokenStream2>,
+    replacement: Option<syn::Expr>,
+    content: Option<syn::Expr>,
+    conditional: Option<syn::Expr>,
     iterator: Option<TokenStream2>,
     plain_attrs: Vec<&'a html5ever::Attribute>,
 }
@@ -197,26 +197,17 @@ impl<'a> Directives<'a> {
         for at in attrs {
             match &*at.name.local {
                 "weft-replace" => {
-                    let replacement = at
-                        .value
-                        .as_ref()
-                        .parse::<TokenStream2>()
+                    let replacement = syn::parse_str(at.value.as_ref())
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.replacement = Some(replacement)
                 }
                 "weft-content" => {
-                    let content = at
-                        .value
-                        .as_ref()
-                        .parse::<TokenStream2>()
+                    let content = syn::parse_str(at.value.as_ref())
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.content = Some(content)
                 }
                 "weft-if" => {
-                    let test = at
-                        .value
-                        .as_ref()
-                        .parse::<TokenStream2>()
+                    let test = syn::parse_str(at.value.as_ref())
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.conditional = Some(test)
                 }

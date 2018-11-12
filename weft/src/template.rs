@@ -20,7 +20,7 @@ impl<'a> From<&'a str> for QName {
 
 impl QName {
     fn as_qual_name(&self) -> html5ever::QualName {
-        html5ever::QualName::new(None, ns!(), html5ever::LocalName::from(self.0.clone()))
+        html5ever::QualName::new(None, ns!(html), html5ever::LocalName::from(self.0.clone()))
     }
 }
 

@@ -199,3 +199,22 @@ fn should_support_polymorphism() {
         expected
     )
 }
+
+#[test]
+#[ignore]
+fn should_support_inline_expr_in_cdata() {
+    #[derive(WeftTemplate)]
+    #[template(source = "<p>Hello {{ self.0 }}!</p>")]
+    struct Greeting(String);
+
+    let s = weft::render_to_string(Greeting("world".into())).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "<p>Hello world!</p>";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}

@@ -43,8 +43,7 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
     info!("Deriving for {}", item.ident);
     trace!("{:#?}", item);
     let config = find_template(&item).context("find template")?;
-    let path = config.relative_to(&root_dir());
-    let dom = parse(&path)?;
+    let dom = config.load_relative_to(&root_dir())?;
 
     let impl_body = derive_impl(&dom, item)?;
 
@@ -124,8 +123,9 @@ fn find_template(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
 }
 
 impl TemplateDerivation {
-    fn relative_to<P: AsRef<Path>>(&self, root_dir: P) -> PathBuf {
-        PathBuf::from(root_dir.as_ref()).join(&self.template_source)
+    fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<Vec<Handle>, Error> {
+        let path = PathBuf::from(root_dir.as_ref()).join(&self.template_source);
+        Ok(parse(&path)?)
     }
 }
 

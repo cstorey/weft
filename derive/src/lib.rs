@@ -99,26 +99,23 @@ fn find_template(item: &syn::DeriveInput) -> Result<String, Error> {
         _ => return Err(failure::err_msg("template attribute incorrectly formatted")),
     };
 
-    let path = {
-        let mut path = None;
-        for meta in meta_list.nested {
-            if let syn::NestedMeta::Meta(ref item) = meta {
-                if let syn::Meta::NameValue(ref pair) = item {
-                    match pair.ident.to_string().as_ref() {
-                        "path" => if let syn::Lit::Str(ref s) = pair.lit {
-                            path = Some(s.value());
-                        } else {
-                            return Err(failure::err_msg(
-                                "template path attribute should be a string",
-                            ));
-                        },
-                        _ => warn!("Unrecognised attribute {:#?}", pair),
-                    }
+    let mut path = None;
+    for meta in meta_list.nested {
+        if let syn::NestedMeta::Meta(ref item) = meta {
+            if let syn::Meta::NameValue(ref pair) = item {
+                match pair.ident.to_string().as_ref() {
+                    "path" => if let syn::Lit::Str(ref s) = pair.lit {
+                        path = Some(s.value());
+                    } else {
+                        return Err(failure::err_msg(
+                            "template path attribute should be a string",
+                        ));
+                    },
+                    _ => warn!("Unrecognised attribute {:#?}", pair),
                 }
             }
         }
-        path.ok_or_else(|| failure::err_msg("Missing path attribute"))?
-    };
+    }
 
-    Ok(path)
+    Ok(path.ok_or_else(|| failure::err_msg("Missing path attribute"))?)
 }

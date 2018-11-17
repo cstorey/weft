@@ -23,8 +23,14 @@ use proc_macro::TokenStream;
 use quote::ToTokens;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone)]
+enum TemplateSource {
+    Path(PathBuf),
+}
+
+#[derive(Debug, Clone)]
 struct TemplateDerivation {
-    template_source: PathBuf,
+    template_source: TemplateSource,
 }
 
 #[proc_macro_derive(WeftTemplate, attributes(template))]
@@ -115,17 +121,21 @@ fn find_template(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
             }
         }
     }
-    let res = TemplateDerivation {
-        template_source: path.ok_or_else(|| failure::err_msg("Missing path attribute"))?,
-    };
+    let template_source =
+        TemplateSource::Path(path.ok_or_else(|| failure::err_msg("Missing path attribute"))?);
+    let res = TemplateDerivation { template_source };
 
     Ok(res)
 }
 
 impl TemplateDerivation {
     fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<Vec<Handle>, Error> {
-        let path = PathBuf::from(root_dir.as_ref()).join(&self.template_source);
-        Ok(parse(&path)?)
+        match &self.template_source {
+            TemplateSource::Path(ref path) => {
+                let path = PathBuf::from(root_dir.as_ref()).join(path);
+                Ok(parse(&path)?)
+            }
+        }
     }
 }
 

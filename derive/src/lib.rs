@@ -23,6 +23,10 @@ use proc_macro::TokenStream;
 use quote::ToTokens;
 use std::path::{Path, PathBuf};
 
+struct TemplateDerivation {
+    template_source: PathBuf,
+}
+
 #[proc_macro_derive(WeftTemplate, attributes(template))]
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we
@@ -38,12 +42,12 @@ pub fn derive_template(input: TokenStream) -> TokenStream {
 fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
     info!("Deriving for {}", item.ident);
     trace!("{:#?}", item);
-    let template = find_template(&item).context("find template")?;
+    let config = find_template(&item).context("find template")?;
     let root_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
         warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
         ".".into()
     });
-    let path = PathBuf::from(root_dir).join(template);
+    let path = PathBuf::from(root_dir).join(config.template_source);
     let dom = parse(&path)?;
 
     let impl_body = derive_impl(&dom, item)?;
@@ -85,7 +89,7 @@ fn find_root_from(node: Handle) -> Option<Vec<Handle>> {
     None
 }
 
-fn find_template(item: &syn::DeriveInput) -> Result<String, Error> {
+fn find_template(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
     let attr = item
         .attrs
         .iter()
@@ -105,7 +109,7 @@ fn find_template(item: &syn::DeriveInput) -> Result<String, Error> {
             if let syn::Meta::NameValue(ref pair) = item {
                 match pair.ident.to_string().as_ref() {
                     "path" => if let syn::Lit::Str(ref s) = pair.lit {
-                        path = Some(s.value());
+                        path = Some(PathBuf::from(s.value()));
                     } else {
                         return Err(failure::err_msg(
                             "template path attribute should be a string",
@@ -116,6 +120,9 @@ fn find_template(item: &syn::DeriveInput) -> Result<String, Error> {
             }
         }
     }
+    let res = TemplateDerivation {
+        template_source: path.ok_or_else(|| failure::err_msg("Missing path attribute"))?,
+    };
 
-    Ok(path.ok_or_else(|| failure::err_msg("Missing path attribute"))?)
+    Ok(res)
 }

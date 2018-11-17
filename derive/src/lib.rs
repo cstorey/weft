@@ -47,7 +47,7 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
         warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
         ".".into()
     });
-    let path = PathBuf::from(root_dir).join(config.template_source);
+    let path = config.relative_to(&root_dir);
     let dom = parse(&path)?;
 
     let impl_body = derive_impl(&dom, item)?;
@@ -125,4 +125,10 @@ fn find_template(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
     };
 
     Ok(res)
+}
+
+impl TemplateDerivation {
+    fn relative_to<P: AsRef<Path>>(&self, root_dir: P) -> PathBuf {
+        PathBuf::from(root_dir.as_ref()).join(&self.template_source)
+    }
 }

@@ -17,7 +17,7 @@ use derive_renderable::*;
 use failure::{Error, ResultExt};
 use html5ever::parse_fragment;
 use html5ever::rcdom::{Handle, NodeData, RcDom};
-use html5ever::tendril::TendrilSink;
+use html5ever::tendril::{StrTendril, TendrilSink};
 use html5ever::QualName;
 use proc_macro::TokenStream;
 use quote::ToTokens;
@@ -26,6 +26,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone)]
 enum TemplateSource {
     Path(PathBuf),
+    Source(String),
 }
 
 #[derive(Debug, Clone)]
@@ -56,14 +57,28 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
     Ok(impl_body.into_token_stream())
 }
 
-fn parse(path: &Path) -> Result<Vec<Handle>, Error> {
+fn parse_path(path: &Path) -> Result<Vec<Handle>, Error> {
     info!("Using template from {:?}", path);
     let root_name = QualName::new(None, ns!(html), local_name!("html"));
-    let dom = parse_fragment(RcDom::default(), Default::default(), root_name, Vec::new())
-        .from_utf8()
+    let parser =
+        parse_fragment(RcDom::default(), Default::default(), root_name, Vec::new()).from_utf8();
+
+    let dom = parser
         .from_file(&path)
         .with_context(|_| format!("Parsing template from path {:?}", &path))?;
 
+    let content = find_root_from(dom.document)
+        .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
+
+    Ok(content)
+}
+
+fn parse_source(source: &str) -> Result<Vec<Handle>, Error> {
+    info!("Using inline template");
+    let root_name = QualName::new(None, ns!(html), local_name!("html"));
+    let parser = parse_fragment(RcDom::default(), Default::default(), root_name, Vec::new());
+
+    let dom = parser.one(source);
     let content = find_root_from(dom.document)
         .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
 
@@ -133,8 +148,9 @@ impl TemplateDerivation {
         match &self.template_source {
             TemplateSource::Path(ref path) => {
                 let path = PathBuf::from(root_dir.as_ref()).join(path);
-                Ok(parse(&path)?)
+                Ok(parse_path(&path)?)
             }
+            TemplateSource::Source(ref source) => Ok(parse_source(source)?),
         }
     }
 }

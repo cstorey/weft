@@ -23,7 +23,7 @@ use proc_macro::TokenStream;
 use quote::ToTokens;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 enum TemplateSource {
     Path(PathBuf),
     Source(String),
@@ -161,4 +161,21 @@ fn root_dir() -> PathBuf {
             warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
             ".".into()
         }).into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn can_parse_with_path() {
+        let deriv = parse_quote!(#[template(path = "hello.html")]
+        struct X;);
+
+        let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
+
+        assert_eq!(
+            conf.template_source,
+            TemplateSource::Path(PathBuf::from("hello.html"))
+        );
+    }
 }

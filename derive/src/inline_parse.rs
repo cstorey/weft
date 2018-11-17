@@ -8,11 +8,11 @@ pub enum Segment {
 
 pub fn parse_inline(input: &str) -> Result<Vec<Segment>, Error> {
     let re = regex::Regex::new(r"\{\{([^}]|}[^}])*\}\}")?;
-    println!("Scanning: {:?}", input);
+    trace!("Scanning: {:?}", input);
     let mut last_match = 0;
     let mut out = Vec::new();
     for it in re.find_iter(input) {
-        println!("Got: {:?}", it);
+        trace!("Got: {:?}", it);
 
         let previous = &input[last_match..it.start()];
         if previous.len() > 0 {

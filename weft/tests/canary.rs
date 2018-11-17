@@ -201,7 +201,6 @@ fn should_support_polymorphism() {
 }
 
 #[test]
-#[ignore]
 fn should_support_inline_expr_in_cdata() {
     #[derive(WeftTemplate)]
     #[template(source = "<p>Hello {{ self.0 }}!</p>")]

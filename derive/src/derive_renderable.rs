@@ -2,6 +2,7 @@ use failure::Error;
 use html5ever::rcdom::{Handle, NodeData};
 use html5ever::tendril::StrTendril;
 use html5ever::QualName;
+use inline_parse::{parse_inline, Segment};
 use proc_macro2::TokenStream as TokenStream2;
 use syn;
 
@@ -161,11 +162,24 @@ impl Walker {
         Ok(res)
     }
     fn text(&self, contents: &StrTendril) -> Result<TokenStream2, Error> {
+        let mut result = TokenStream2::new();
         let cdata = contents.to_string();
         trace!("Text {:?}", cdata);
-        Ok(quote!(
-                __weft_target.text(#cdata)?;
-            ))
+        for segment in parse_inline(&cdata)? {
+            match segment {
+                Segment::Literal(cdata) => {
+                    let chunk = quote!(__weft_target.text(#cdata)?;);
+                    result.extend(chunk);
+                }
+                Segment::Expr(expr) => {
+                    let expr: syn::Expr =
+                        syn::parse_str(&expr).map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    let chunk = quote!(#expr.render_to(__weft_target)?;);
+                    result.extend(chunk);
+                }
+            }
+        }
+        Ok(result)
     }
 
     fn emit_element(

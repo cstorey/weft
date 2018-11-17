@@ -24,6 +24,24 @@ fn should_derive_trivial_from_markup() {
 }
 
 #[test]
+fn should_allow_inline_source() {
+    #[derive(WeftTemplate)]
+    #[template(source = "I am inline")]
+    struct InlineMarkup;
+
+    let s = weft::render_to_string(InlineMarkup).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "I am inline";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}
+
+#[test]
 fn should_not_include_enclosing_html_tags() {
     let s = weft::render_to_string(TrivialMarkup).expect("render_to_string");
     println!("{}", s);

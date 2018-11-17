@@ -49,7 +49,7 @@ pub fn derive_template(input: TokenStream) -> TokenStream {
 fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
     info!("Deriving for {}", item.ident);
     trace!("{:#?}", item);
-    let config = find_template(&item).context("find template")?;
+    let config = TemplateDerivation::from_derive(&item).context("find template")?;
     let dom = config.load_relative_to(&root_dir())?;
 
     let impl_body = derive_impl(&dom, item)?;
@@ -105,45 +105,45 @@ fn find_root_from(node: Handle) -> Option<Vec<Handle>> {
     None
 }
 
-fn find_template(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
-    let attr = item
-        .attrs
-        .iter()
-        .filter_map(|a| a.interpret_meta())
-        .inspect(|a| info!("Attribute: {:#?}", a))
-        .find(|a| a.name() == "template")
-        .ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
+impl TemplateDerivation {
+    fn from_derive(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
+        let attr = item
+            .attrs
+            .iter()
+            .filter_map(|a| a.interpret_meta())
+            .inspect(|a| info!("Attribute: {:#?}", a))
+            .find(|a| a.name() == "template")
+            .ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
 
-    let meta_list = match attr {
-        syn::Meta::List(inner) => inner,
-        _ => return Err(failure::err_msg("template attribute incorrectly formatted")),
-    };
+        let meta_list = match attr {
+            syn::Meta::List(inner) => inner,
+            _ => return Err(failure::err_msg("template attribute incorrectly formatted")),
+        };
 
-    let mut path = None;
-    for meta in meta_list.nested {
-        if let syn::NestedMeta::Meta(ref item) = meta {
-            if let syn::Meta::NameValue(ref pair) = item {
-                match pair.ident.to_string().as_ref() {
-                    "path" => if let syn::Lit::Str(ref s) = pair.lit {
-                        path = Some(PathBuf::from(s.value()));
-                    } else {
-                        return Err(failure::err_msg(
-                            "template path attribute should be a string",
-                        ));
-                    },
-                    _ => warn!("Unrecognised attribute {:#?}", pair),
+        let mut path = None;
+        for meta in meta_list.nested {
+            if let syn::NestedMeta::Meta(ref item) = meta {
+                if let syn::Meta::NameValue(ref pair) = item {
+                    match pair.ident.to_string().as_ref() {
+                        "path" => if let syn::Lit::Str(ref s) = pair.lit {
+                            path = Some(PathBuf::from(s.value()));
+                        } else {
+                            return Err(failure::err_msg(
+                                "template path attribute should be a string",
+                            ));
+                        },
+                        _ => warn!("Unrecognised attribute {:#?}", pair),
+                    }
                 }
             }
         }
+        let template_source =
+            TemplateSource::Path(path.ok_or_else(|| failure::err_msg("Missing path attribute"))?);
+        let res = TemplateDerivation { template_source };
+
+        Ok(res)
     }
-    let template_source =
-        TemplateSource::Path(path.ok_or_else(|| failure::err_msg("Missing path attribute"))?);
-    let res = TemplateDerivation { template_source };
 
-    Ok(res)
-}
-
-impl TemplateDerivation {
     fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<Vec<Handle>, Error> {
         match &self.template_source {
             TemplateSource::Path(ref path) => {

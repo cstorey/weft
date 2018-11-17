@@ -43,11 +43,7 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
     info!("Deriving for {}", item.ident);
     trace!("{:#?}", item);
     let config = find_template(&item).context("find template")?;
-    let root_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
-        warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
-        ".".into()
-    });
-    let path = config.relative_to(&root_dir);
+    let path = config.relative_to(&root_dir());
     let dom = parse(&path)?;
 
     let impl_body = derive_impl(&dom, item)?;
@@ -131,4 +127,12 @@ impl TemplateDerivation {
     fn relative_to<P: AsRef<Path>>(&self, root_dir: P) -> PathBuf {
         PathBuf::from(root_dir.as_ref()).join(&self.template_source)
     }
+}
+
+fn root_dir() -> PathBuf {
+    std::env::var("CARGO_MANIFEST_DIR")
+        .unwrap_or_else(|_| {
+            warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
+            ".".into()
+        }).into()
 }

@@ -11,14 +11,16 @@ extern crate env_logger;
 extern crate syn;
 #[macro_use]
 extern crate html5ever;
+extern crate regex;
 
 mod derive_renderable;
+mod inline_parse;
 use derive_renderable::*;
 
 use failure::{Error, ResultExt};
 use html5ever::parse_fragment;
 use html5ever::rcdom::{Handle, NodeData, RcDom};
-use html5ever::tendril::{StrTendril, TendrilSink};
+use html5ever::tendril::TendrilSink;
 use html5ever::QualName;
 use proc_macro::TokenStream;
 use quote::ToTokens;

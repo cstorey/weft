@@ -2,6 +2,7 @@ extern crate proc_macro;
 extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
+#[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate log;
@@ -121,6 +122,7 @@ impl TemplateDerivation {
         };
 
         let mut path = None;
+        let mut source = None;
         for meta in meta_list.nested {
             if let syn::NestedMeta::Meta(ref item) = meta {
                 if let syn::Meta::NameValue(ref pair) = item {
@@ -132,13 +134,30 @@ impl TemplateDerivation {
                                 "template path attribute should be a string",
                             ));
                         },
+                        "source" => if let syn::Lit::Str(ref s) = pair.lit {
+                            source = Some(s.value())
+                        } else {
+                            return Err(failure::err_msg(
+                                "template path attribute should be a string",
+                            ));
+                        },
+
                         _ => warn!("Unrecognised attribute {:#?}", pair),
                     }
                 }
             }
         }
-        let template_source =
-            TemplateSource::Path(path.ok_or_else(|| failure::err_msg("Missing path attribute"))?);
+        let template_source = match (path, source) {
+            (Some(path), None) => {
+                TemplateSource::Path(path)
+            },
+            (None, Some(source)) => {
+                TemplateSource::Source(source)
+            },
+            _ => bail!("Exactly one of `source` or `path` attributes must be specfied in `#[template(...)]")
+        };
+        // .ok_or_else(|| failure::err_msg("Missing path attribute"))?);
+
         let res = TemplateDerivation { template_source };
 
         Ok(res)
@@ -177,5 +196,36 @@ mod tests {
             conf.template_source,
             TemplateSource::Path(PathBuf::from("hello.html"))
         );
+    }
+
+    #[test]
+    fn can_parse_with_source() {
+        let source = "<p>Stuff</p>";
+        let deriv = parse_quote!(#[template(source = #source)]
+        struct X;);
+
+        let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
+
+        assert_eq!(conf.template_source, TemplateSource::Source(source.into()));
+    }
+
+    #[test]
+    fn cannot_parse_with_neither_source_or_path() {
+        let deriv = quote!(#[template()]
+        struct X;);
+
+        let parsed = syn::parse2(deriv.clone()).expect("parse");
+        let res = TemplateDerivation::from_derive(&parsed);
+        assert!(res.is_err(), "Template {} should not parse", deriv)
+    }
+
+    #[test]
+    fn cannot_parse_with_both_source_or_path() {
+        let deriv = quote!(#[template(source = "...", path = "...")]
+        struct X;);
+
+        let parsed = syn::parse2(deriv.clone()).expect("parse");
+        let res = TemplateDerivation::from_derive(&parsed);
+        assert!(res.is_err(), "Template {} should not parse", deriv)
     }
 }

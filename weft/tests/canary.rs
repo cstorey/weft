@@ -256,6 +256,24 @@ fn should_support_inline_expr_in_attrs() {
     )
 }
 
+#[test]
+fn should_correctly_parse_inline_with_entities() {
+    #[derive(WeftTemplate)]
+    #[template(source = "<p>Hello &#123;&#123; self.0 &#125;&#125;!</p>")]
+    struct Greeting(String);
+
+    let s = weft::render_to_string(Greeting("world".into())).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "<p>Hello world!</p>";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}
+
 #[cfg(never)]
 #[test]
 #[ignore]

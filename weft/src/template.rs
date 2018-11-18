@@ -91,7 +91,7 @@ impl<R: Renderable> html5ever::serialize::Serialize for Html5Wrapper<R> {
 }
 
 impl AttrPair {
-    pub fn new(local_name: &str, value: &str) -> Self {
+    pub fn new<S: ToString>(local_name: &str, value: S) -> Self {
         let qual = QualName::new(None, ns!(), html5ever::LocalName::from(local_name));
         AttrPair {
             name: qual,

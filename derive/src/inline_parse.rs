@@ -6,14 +6,14 @@ pub enum Segment {
     Expr(syn::Expr),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Substitutable {
     children: Vec<Segment>,
 }
 
 impl Substitutable {
-    pub fn children(self) -> Vec<Segment> {
-        self.children
+    pub fn children<'a>(&'a self) -> impl 'a + Iterator<Item = Segment> {
+        self.children.iter().cloned()
     }
 }
 

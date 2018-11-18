@@ -239,7 +239,6 @@ fn should_support_inline_expr_in_cdata() {
 }
 
 #[test]
-#[ignore]
 fn should_support_inline_expr_in_attrs() {
     #[derive(WeftTemplate)]
     #[template(source = "<span abbr=\"{{self.0}}\">Longer thing</span>")]
@@ -257,14 +256,15 @@ fn should_support_inline_expr_in_attrs() {
     )
 }
 
+#[cfg(never)]
 #[test]
 #[ignore]
 fn should_allow_disabling_inline_exprs() {
     #[derive(WeftTemplate)]
     #[template(source = "<p weft-inline-disable>Hello {{ self.0 }}!</p>")]
-    struct Greeting(String);
+    struct Greeting2(String);
 
-    let s = weft::render_to_string(Greeting("world".into())).expect("render_to_string");
+    let s = weft::render_to_string(Greeting2("world".into())).expect("render_to_string");
     println!("{}", s);
 
     let expected = "<p>Hello {{ self.0 }}!</p>";

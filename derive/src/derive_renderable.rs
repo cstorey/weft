@@ -2,7 +2,7 @@ use failure::Error;
 use html5ever::rcdom::{Handle, NodeData};
 use html5ever::tendril::StrTendril;
 use html5ever::QualName;
-use inline_parse::{parse_inline, Segment};
+use inline_parse::{parse_inline, Segment, Substitutable};
 use proc_macro2::TokenStream as TokenStream2;
 use syn;
 
@@ -12,7 +12,7 @@ struct Walker;
 #[derive(Default, Debug)]
 struct Attribute {
     name: String,
-    value: String,
+    value: Substitutable,
 }
 
 #[derive(Default, Debug)]
@@ -45,7 +45,6 @@ fn render_to_fn(nodes: &[Handle]) -> Result<TokenStream2, Error> {
 pub fn derive_impl(nodes: &[Handle], mut item: syn::DeriveInput) -> Result<TokenStream2, Error> {
     info!("Deriving implementation for {}", item.ident);
     let render_to_fn_impl = render_to_fn(nodes)?;
-    debug!("Fn body: {}", render_to_fn_impl);
 
     info!("Generics before: {:#?}", item.generics);
     let bounds = item
@@ -73,6 +72,7 @@ pub fn derive_impl(nodes: &[Handle], mut item: syn::DeriveInput) -> Result<Token
             #render_to_fn_impl
         }
     };
+    debug!("Impl: {}", res);
     Ok(res)
 }
 
@@ -171,7 +171,8 @@ impl Walker {
         let mut result = TokenStream2::new();
         let cdata = contents.to_string();
         trace!("Text {:?}", cdata);
-        for segment in parse_inline(&cdata)?.children() {
+        let parsed = parse_inline(&cdata)?;
+        for segment in parsed.children() {
             match segment {
                 Segment::Literal(cdata) => {
                     let chunk = quote!(__weft_target.text(#cdata)?;);
@@ -251,14 +252,26 @@ impl Directives {
 impl Attribute {
     fn parse(input: &html5ever::Attribute) -> Result<Self, Error> {
         let name: String = input.name.local.to_string();
-        let value: String = input.value.to_string();
+        let value = parse_inline(&input.value.to_string())?;
 
         Ok(Attribute { name, value })
     }
 
     fn to_tokens(&self) -> TokenStream2 {
         let key_name: String = self.name.to_string();
-        let value: String = self.value.to_string();
+
+        let str_iter_q = self
+            .value
+            .children()
+            .map(|segment| match segment {
+                Segment::Literal(cdata) => quote!(#cdata.to_string()),
+                Segment::Expr(expr) => quote!(#expr.to_string()),
+            }).fold(
+                quote!(::std::iter::empty::<String>()),
+                |prefix, it| quote!(#prefix.chain(::std::iter::once(#it))),
+            );
+
+        let value = quote!(#str_iter_q.collect::<String>());
         quote!(::weft::AttrPair::new(#key_name, #value))
     }
 }

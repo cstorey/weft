@@ -42,7 +42,21 @@ struct TemplateDerivation {
     template_source: TemplateSource,
 }
 
-/// The main entrypoint for the derivation crate.
+/// Derives a `WeftRenderable` instance from a given html template.
+///
+/// Requires the user pass an additional `#[template(...)]` attribute to
+/// specify either a path (relative to the crate root) or template source.
+///
+/// ## Configuration
+/// Options are specified as `parameter = value`, and have the following meanings:
+///
+/// ### Finding the template source.
+/// * `path`: The path of the template relative to the crate root.
+///           Must be present at compile time.
+/// * `source`: The template source specified inline as a string.
+///
+/// One of `path` or `source` must be specified.
+
 #[proc_macro_derive(WeftRenderable, attributes(template))]
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we

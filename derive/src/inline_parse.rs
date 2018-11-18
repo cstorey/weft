@@ -3,7 +3,7 @@ use failure::Error;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Segment {
     Literal(String),
-    Expr(String),
+    Expr(syn::Expr),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -32,7 +32,10 @@ pub fn parse_inline(input: &str) -> Result<Substitutable, Error> {
 
         let m = it.as_str();
         let range = 2..(m.len() - 2);
-        children.push(Segment::Expr(m[range].trim().into()));
+        let expr: syn::Expr =
+            syn::parse_str(&m[range]).map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+
+        children.push(Segment::Expr(expr));
 
         last_match = it.end();
     }
@@ -50,7 +53,7 @@ mod tests {
     #[test]
     fn test_trivial_expr() {
         let segments = parse_inline("{{ foo }}").expect("parse_inline");
-        assert_eq!(&segments.children, &[Segment::Expr("foo".into())])
+        assert_eq!(&segments.children, &[Segment::Expr(parse_quote!(foo))])
     }
 
     #[test]
@@ -67,7 +70,10 @@ mod tests {
         let segments = parse_inline("A {{ foo }}").expect("parse_inline");
         assert_eq!(
             &segments.children,
-            &[Segment::Literal("A ".into()), Segment::Expr("foo".into())]
+            &[
+                Segment::Literal("A ".into()),
+                Segment::Expr(parse_quote!(foo))
+            ]
         )
     }
 
@@ -78,9 +84,9 @@ mod tests {
             &segments.children,
             &[
                 Segment::Literal("I ".into()),
-                Segment::Expr("verb".into()),
+                Segment::Expr(parse_quote!(verb)),
                 Segment::Literal(" with ".into()),
-                Segment::Expr("noun".into()),
+                Segment::Expr(parse_quote!(noun)),
                 Segment::Literal(".".into())
             ]
         )

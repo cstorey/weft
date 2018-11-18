@@ -178,8 +178,6 @@ impl Walker {
                     result.extend(chunk);
                 }
                 Segment::Expr(expr) => {
-                    let expr: syn::Expr =
-                        syn::parse_str(&expr).map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     let chunk = quote!(#expr.render_to(__weft_target)?;);
                     result.extend(chunk);
                 }

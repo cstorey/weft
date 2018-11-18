@@ -11,7 +11,7 @@ use weft::*;
 fn should_render_trivial_example() {
     struct TrivialExample;
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
-    impl Renderable for TrivialExample {
+    impl WeftTemplate for TrivialExample {
         fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
             target.start_element("p".into())?;
             target.text("Hello".into())?;
@@ -34,7 +34,7 @@ fn should_render_trivial_example() {
 fn should_render_attrs() {
     struct TrivialExample;
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
-    impl Renderable for TrivialExample {
+    impl WeftTemplate for TrivialExample {
         fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
             target.start_element_attrs(
                 "p".into(),
@@ -61,7 +61,7 @@ fn should_render_attrs() {
 fn render_supports_builtins() {
     struct TrivialExample;
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
-    impl Renderable for TrivialExample {
+    impl WeftTemplate for TrivialExample {
         fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
             "Hello world!".render_to(target)?;
             Ok(())

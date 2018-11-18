@@ -10,12 +10,18 @@ use syn;
 struct Walker;
 
 #[derive(Default, Debug)]
-struct Directives<'a> {
+struct Attribute {
+    name: String,
+    value: String,
+}
+
+#[derive(Default, Debug)]
+struct Directives {
     replacement: Option<syn::Expr>,
     content: Option<syn::Expr>,
     conditional: Option<syn::Expr>,
     iterator: Option<IteratorDecl>,
-    plain_attrs: Vec<&'a html5ever::Attribute>,
+    plain_attrs: Vec<Attribute>,
 }
 
 #[derive(Debug)]
@@ -185,13 +191,12 @@ impl Walker {
     fn emit_element(
         &self,
         localname: &str,
-        attrs: &[&html5ever::Attribute],
+        attrs: &[Attribute],
         content: TokenStream2,
     ) -> Result<TokenStream2, Error> {
         let attrs_quotes = attrs.iter().map(|at| at).map(|at| {
-            let key_name: String = at.name.local.to_string();
-            let value: String = at.value.to_string();
-            quote!(::std::iter::once(&::weft::AttrPair::new(#key_name, #value)))
+            let attr = at.to_tokens();
+            quote!(::std::iter::once(&#attr))
         });
 
         let attrs_q = attrs_quotes.fold(
@@ -212,8 +217,8 @@ impl Walker {
     }
 }
 
-impl<'a> Directives<'a> {
-    fn parse_from_attrs(attrs: &'a [html5ever::Attribute]) -> Result<Self, Error> {
+impl Directives {
+    fn parse_from_attrs(attrs: &[html5ever::Attribute]) -> Result<Self, Error> {
         let mut it = Self::default();
         for at in attrs {
             match &*at.name.local {
@@ -237,11 +242,26 @@ impl<'a> Directives<'a> {
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.iterator = Some(iterator)
                 }
-                _ => it.plain_attrs.push(&at),
+                _ => it.plain_attrs.push(Attribute::parse(at)?),
             }
         }
 
         Ok(it)
+    }
+}
+
+impl Attribute {
+    fn parse(input: &html5ever::Attribute) -> Result<Self, Error> {
+        let name: String = input.name.local.to_string();
+        let value: String = input.value.to_string();
+
+        Ok(Attribute { name, value })
+    }
+
+    fn to_tokens(&self) -> TokenStream2 {
+        let key_name: String = self.name.to_string();
+        let value: String = self.value.to_string();
+        quote!(::weft::AttrPair::new(#key_name, #value))
     }
 }
 

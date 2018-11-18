@@ -201,6 +201,26 @@ fn should_support_polymorphism() {
 }
 
 #[test]
+fn should_support_bare_attributes() {
+    // We ostensibly don't differentiate between a bare attribute and
+    // and empty value.
+    #[derive(WeftTemplate)]
+    #[template(source = "<p some-thing></p>")]
+    struct BareAttr;
+
+    let s = weft::render_to_string(BareAttr).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = " some-thing=";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}
+
+#[test]
 fn should_support_inline_expr_in_cdata() {
     #[derive(WeftTemplate)]
     #[template(source = "<p>Hello {{ self.0 }}!</p>")]

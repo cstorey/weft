@@ -1,5 +1,7 @@
 # Weft: composable HTML templating
 
+[![CircleCI](https://circleci.com/gh/cstorey/weft/tree/master.svg?style=svg)](https://circleci.com/gh/cstorey/weft/tree/master)
+
 ## Why another templating language?
 
 Weft is inspired by the [Genshi](https://genshi.edgewall.org/wiki/GenshiFaq) templating language. And in the grand tradition of awful naming puns in open source, since [Genshi means Thread](https://genshi.edgewall.org/wiki/GenshiFaq#WhyisitcalledGenshi), we're calling this Weft, after the base thread used in weaving.

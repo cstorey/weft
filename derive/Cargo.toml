@@ -1,7 +1,11 @@
 [package]
-authors = ["Ceri Storey <cez@necrofish.org.uk>"]
 name = "weft_derive"
+description = "HTML templating with composability in mind"
+license = "Apache-2.0"
 version = "0.1.0"
+repository = "https://github.com/cstorey/weft"
+readme = "../README.md"
+categories = ["web-programming", "template-engine"]
 
 [dependencies]
 env_logger = "0.5.13"

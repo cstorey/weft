@@ -30,7 +30,6 @@ pub struct AttrPair {
 }
 
 pub trait RenderTarget {
-    fn start_element(&mut self, name: QName) -> Result<(), io::Error>;
     fn start_element_attrs<'a, I: IntoIterator<Item = &'a AttrPair>>(
         &mut self,
         name: QName,
@@ -59,9 +58,6 @@ struct Html5Wrapper<R> {
 struct Html5Ser<'a, T: 'a>(&'a mut T);
 
 impl<'a, T: 'a + html5ever::serialize::Serializer> RenderTarget for Html5Ser<'a, T> {
-    fn start_element(&mut self, name: QName) -> Result<(), io::Error> {
-        self.0.start_elem(name.as_qual_name(), iter::empty())
-    }
     fn start_element_attrs<'attr, I: IntoIterator<Item = &'attr AttrPair>>(
         &mut self,
         name: QName,

@@ -13,7 +13,7 @@ fn should_render_trivial_example() {
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl WeftRenderable for TrivialExample {
         fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
-            target.start_element("p".into())?;
+            target.start_element_attrs("p".into(), iter::empty())?;
             target.text("Hello".into())?;
             target.end_element("p".into())?;
             Ok(())

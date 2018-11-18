@@ -264,11 +264,11 @@ impl Attribute {
             .value
             .children()
             .map(|segment| match segment {
-                Segment::Literal(cdata) => quote!(#cdata.to_string()),
+                Segment::Literal(cdata) => quote!(#cdata),
                 Segment::Expr(expr) => quote!(#expr.to_string()),
             }).fold(
-                quote!(::std::iter::empty::<String>()),
-                |prefix, it| quote!(#prefix.chain(::std::iter::once(#it))),
+                quote!(::std::iter::empty::<::std::borrow::Cow<str>>()),
+                |prefix, it| quote!(#prefix.chain(::std::iter::once(::std::borrow::Cow::from(#it)))),
             );
 
         let value = quote!(#str_iter_q.collect::<String>());

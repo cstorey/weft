@@ -171,7 +171,7 @@ impl Walker {
         let mut result = TokenStream2::new();
         let cdata = contents.to_string();
         trace!("Text {:?}", cdata);
-        for segment in parse_inline(&cdata)? {
+        for segment in parse_inline(&cdata)?.children() {
             match segment {
                 Segment::Literal(cdata) => {
                     let chunk = quote!(__weft_target.text(#cdata)?;);

@@ -1,7 +1,6 @@
 use html5ever;
 use html5ever::QualName;
 use std::io;
-use std::iter;
 
 /// An internal representation of a qualified name, such as a tag or attribute.
 /// Does not currently support namespaces.

@@ -1,3 +1,8 @@
+/*!
+# `weft-derive`.
+This module provides compiler support for creating `weft` templates. See the `weft` module for usage.
+*/
+
 extern crate proc_macro;
 extern crate proc_macro2;
 #[macro_use]
@@ -37,6 +42,7 @@ struct TemplateDerivation {
     template_source: TemplateSource,
 }
 
+/// The main entrypoint for the derivation crate.
 #[proc_macro_derive(WeftTemplate, attributes(template))]
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we

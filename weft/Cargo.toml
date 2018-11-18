@@ -1,6 +1,8 @@
 [package]
 authors = ["Ceri Storey <cez@necrofish.org.uk>"]
 name = "weft"
+description = "HTML templating with composability in mind"
+license = "Apache-2.0"
 version = "0.1.0"
 repository = "https://github.com/cstorey/weft"
 readme = "README.md"

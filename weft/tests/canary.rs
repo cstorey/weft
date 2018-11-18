@@ -220,6 +220,25 @@ fn should_support_inline_expr_in_cdata() {
 
 #[test]
 #[ignore]
+fn should_support_inline_expr_in_attrs() {
+    #[derive(WeftTemplate)]
+    #[template(source = "<span abbr=\"{{self.0}}\">Longer thing</span>")]
+    struct Abbr(String);
+
+    let s = weft::render_to_string(Abbr("Long".into())).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "<span abbr=\"Long\">";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}
+
+#[test]
+#[ignore]
 fn should_allow_disabling_inline_exprs() {
     #[derive(WeftTemplate)]
     #[template(source = "<p weft-inline-disable>Hello {{ self.0 }}!</p>")]

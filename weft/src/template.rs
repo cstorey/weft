@@ -3,6 +3,8 @@ use html5ever::QualName;
 use std::io;
 use std::iter;
 
+/// An internal representation of a qualified name, such as a tag or attribute.
+/// Does not currently support namespaces.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QName(String);
 
@@ -24,18 +26,24 @@ impl QName {
     }
 }
 
+/// An attribute name and value pair.
 pub struct AttrPair {
     name: QualName,
     value: String,
 }
 
+/// Something that we can use to actually render HTML to text.
+///
 pub trait RenderTarget {
+    /// Open an element with the given name and attributes.
     fn start_element_attrs<'a, I: IntoIterator<Item = &'a AttrPair>>(
         &mut self,
         name: QName,
         attrs: I,
     ) -> Result<(), io::Error>;
+    /// Write plain text content.
     fn text(&mut self, content: &str) -> Result<(), io::Error>;
+    /// Close an element.
     fn end_element(&mut self, name: QName) -> Result<(), io::Error>;
 }
 
@@ -91,6 +99,7 @@ impl<R: WeftRenderable> html5ever::serialize::Serialize for Html5Wrapper<R> {
 }
 
 impl AttrPair {
+    /// Builds an attribute from a local-name and a value convertible to a string.
     pub fn new<S: ToString>(local_name: &str, value: S) -> Self {
         let qual = QualName::new(None, ns!(), html5ever::LocalName::from(local_name));
         AttrPair {

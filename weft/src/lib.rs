@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 /*!
 # `weft`.
 This module provides runtime support for `weft` templates.

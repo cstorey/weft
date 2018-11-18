@@ -2,6 +2,9 @@
 authors = ["Ceri Storey <cez@necrofish.org.uk>"]
 name = "weft"
 version = "0.1.0"
+repository = "https://github.com/cstorey/weft"
+readme = "README.md"
+categories = ["web-programming", "template-engine"]
 
 [dependencies]
 html5ever = "0.22.3"

@@ -39,11 +39,15 @@ pub trait RenderTarget {
     fn text(&mut self, content: &str) -> Result<(), io::Error>;
     fn end_element(&mut self, name: QName) -> Result<(), io::Error>;
 }
-pub trait WeftTemplate {
+
+/// This is designed to be implemented via the `weft_derive` crate,
+/// but can be implemented manually for special cases.
+pub trait WeftRenderable {
+    /// Outputs a representation of this object to the target.
     fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error>;
 }
 
-impl<'a, R: WeftTemplate> WeftTemplate for &'a R {
+impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
     fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
         (**self).render_to(target)
     }
@@ -76,7 +80,7 @@ impl<'a, T: 'a + html5ever::serialize::Serializer> RenderTarget for Html5Ser<'a,
     }
 }
 
-impl<R: WeftTemplate> html5ever::serialize::Serialize for Html5Wrapper<R> {
+impl<R: WeftRenderable> html5ever::serialize::Serialize for Html5Wrapper<R> {
     fn serialize<S>(
         &self,
         serializer: &mut S,
@@ -100,13 +104,15 @@ impl AttrPair {
     }
 }
 
-pub fn render_writer<R: WeftTemplate, W: io::Write>(widget: R, out: W) -> Result<(), io::Error> {
+/// Renders the template in `widget` to the writer `out`.
+pub fn render_writer<R: WeftRenderable, W: io::Write>(widget: R, out: W) -> Result<(), io::Error> {
     let nodes = Html5Wrapper { inner: widget };
     html5ever::serialize::serialize(out, &nodes, Default::default())?;
     Ok(())
 }
 
-pub fn render_to_string<R: WeftTemplate>(widget: R) -> Result<String, io::Error> {
+/// Renders the template in `widget` to a new String.
+pub fn render_to_string<R: WeftRenderable>(widget: R) -> Result<String, io::Error> {
     let mut out = Vec::new();
     render_writer(widget, &mut out)?;
     Ok(String::from_utf8_lossy(&out).into_owned())

@@ -9,7 +9,7 @@ This module provides runtime support for `weft` templates.
    #[macro_use]
    extern crate weft_derive;
    extern crate weft;
-   #[derive(WeftTemplate)]
+   #[derive(WeftRenderable)]
    #[template(source = "<p>Hello {{ self.0 }}!</p>")]
    struct Greeting(String);
 

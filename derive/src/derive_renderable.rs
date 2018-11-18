@@ -52,7 +52,7 @@ pub fn derive_impl(nodes: &[Handle], mut item: syn::DeriveInput) -> Result<Token
         .type_params()
         .map(|p| {
             let name = &p.ident;
-            parse_quote!(#name : ::weft::WeftTemplate)
+            parse_quote!(#name : ::weft::WeftRenderable)
         }).collect::<Vec<syn::WherePredicate>>();
 
     {
@@ -68,7 +68,7 @@ pub fn derive_impl(nodes: &[Handle], mut item: syn::DeriveInput) -> Result<Token
 
     let ident = &item.ident;
     let res = quote! {
-        impl #impl_generics ::weft::WeftTemplate for #ident #ty_generics #where_clause {
+        impl #impl_generics ::weft::WeftRenderable for #ident #ty_generics #where_clause {
             #render_to_fn_impl
         }
     };

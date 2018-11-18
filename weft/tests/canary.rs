@@ -5,7 +5,7 @@ extern crate weft_derive;
 
 use regex::*;
 
-#[derive(WeftTemplate)]
+#[derive(WeftRenderable)]
 #[template(path = "tests/trivial.html")]
 struct TrivialMarkup;
 
@@ -25,7 +25,7 @@ fn should_derive_trivial_from_markup() {
 
 #[test]
 fn should_allow_inline_source() {
-    #[derive(WeftTemplate)]
+    #[derive(WeftRenderable)]
     #[template(source = "I am inline")]
     struct InlineMarkup;
 
@@ -54,7 +54,7 @@ fn should_not_include_enclosing_html_tags() {
         unexpected
     )
 }
-#[derive(WeftTemplate)]
+#[derive(WeftRenderable)]
 #[template(path = "tests/trivial_with_attrs.html")]
 struct TrivialAttrs;
 
@@ -72,7 +72,7 @@ fn should_pass_through_attributes() {
     )
 }
 
-#[derive(WeftTemplate)]
+#[derive(WeftRenderable)]
 #[template(path = "tests/interpolatable.html")]
 struct Interpolatable<'a> {
     name: &'a str,
@@ -93,7 +93,7 @@ fn should_support_replace_directive() {
         expected
     )
 }
-#[derive(WeftTemplate)]
+#[derive(WeftRenderable)]
 #[template(path = "tests/content.html")]
 struct WithContent {
     child: String,
@@ -116,7 +116,7 @@ fn should_support_content() {
         expected
     )
 }
-#[derive(WeftTemplate)]
+#[derive(WeftRenderable)]
 #[template(path = "tests/conditional.html")]
 struct Conditional {
     enabled: bool,
@@ -153,7 +153,7 @@ fn should_include_when_conditional_true() {
     )
 }
 
-#[derive(WeftTemplate)]
+#[derive(WeftRenderable)]
 #[template(path = "tests/for-in.html")]
 struct ForIn<'a> {
     items: Vec<&'a str>,
@@ -176,11 +176,11 @@ fn should_support_iteration() {
     )
 }
 
-#[derive(WeftTemplate)]
+#[derive(WeftRenderable)]
 #[template(path = "tests/content.html",)]
 struct WithPolyContent<C> {
-    // Need a way to declare which type variables need to have `WeftTemplate`
-    // constraints when we declare the struct WeftTemplate impl.
+    // Need a way to declare which type variables need to have `WeftRenderable`
+    // constraints when we declare the struct WeftRenderable impl.
     child: C,
 }
 
@@ -204,7 +204,7 @@ fn should_support_polymorphism() {
 fn should_support_bare_attributes() {
     // We ostensibly don't differentiate between a bare attribute and
     // and empty value.
-    #[derive(WeftTemplate)]
+    #[derive(WeftRenderable)]
     #[template(source = "<p some-thing></p>")]
     struct BareAttr;
 
@@ -222,7 +222,7 @@ fn should_support_bare_attributes() {
 
 #[test]
 fn should_support_inline_expr_in_cdata() {
-    #[derive(WeftTemplate)]
+    #[derive(WeftRenderable)]
     #[template(source = "<p>Hello {{ self.0 }}!</p>")]
     struct Greeting(String);
 
@@ -240,7 +240,7 @@ fn should_support_inline_expr_in_cdata() {
 
 #[test]
 fn should_support_inline_expr_in_attrs() {
-    #[derive(WeftTemplate)]
+    #[derive(WeftRenderable)]
     #[template(source = "<span abbr=\"{{self.0}}\">Longer thing</span>")]
     struct Abbr(String);
 
@@ -258,7 +258,7 @@ fn should_support_inline_expr_in_attrs() {
 
 #[test]
 fn should_correctly_parse_inline_with_entities() {
-    #[derive(WeftTemplate)]
+    #[derive(WeftRenderable)]
     #[template(source = "<p>Hello &#123;&#123; self.0 &#125;&#125;!</p>")]
     struct Greeting(String);
 
@@ -278,7 +278,7 @@ fn should_correctly_parse_inline_with_entities() {
 #[test]
 #[ignore]
 fn should_allow_disabling_inline_exprs() {
-    #[derive(WeftTemplate)]
+    #[derive(WeftRenderable)]
     #[template(source = "<p weft-inline-disable>Hello {{ self.0 }}!</p>")]
     struct Greeting2(String);
 

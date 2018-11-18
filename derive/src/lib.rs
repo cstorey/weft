@@ -43,7 +43,7 @@ struct TemplateDerivation {
 }
 
 /// The main entrypoint for the derivation crate.
-#[proc_macro_derive(WeftTemplate, attributes(template))]
+#[proc_macro_derive(WeftRenderable, attributes(template))]
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we
     // don't know for sure that we're using the same `log` crate. So, just in case?

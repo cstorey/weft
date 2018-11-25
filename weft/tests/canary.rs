@@ -293,3 +293,22 @@ fn should_allow_disabling_inline_exprs() {
         expected
     )
 }
+
+#[cfg(never)]
+#[test]
+fn should_import_displayable() {
+    #[derive(WeftRenderable)]
+    #[template(source = "<p>{{ self.0.display() }}</p>")]
+    struct Displayer(u64);
+
+    let s = weft::render_to_string(Displayer(42)).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = ">42<";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}

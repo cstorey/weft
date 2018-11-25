@@ -7,7 +7,7 @@ impl<'a> WeftRenderable for &'a str {
     }
 }
 
-impl<'a> WeftRenderable for String {
+impl WeftRenderable for String {
     fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
         target.text(self)
     }

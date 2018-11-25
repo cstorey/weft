@@ -38,6 +38,7 @@ enum TemplateSource {
 #[derive(Debug, Clone)]
 struct TemplateDerivation {
     template_source: TemplateSource,
+    selector: String,
 }
 
 /// Derives a `WeftRenderable` instance from a given html template.
@@ -115,6 +116,7 @@ impl TemplateDerivation {
 
         let mut path = None;
         let mut source = None;
+        let mut template_selector = None;
         for meta in meta_list.nested {
             if let syn::NestedMeta::Meta(ref item) = meta {
                 if let syn::Meta::NameValue(ref pair) = item {
@@ -133,12 +135,18 @@ impl TemplateDerivation {
                                 "template path attribute should be a string",
                             ));
                         },
+                        "selector" => if let syn::Lit::Str(ref s) = pair.lit {
+                            template_selector = Some(s.value())
+                        } else {
+                            return Err(failure::err_msg("template selector should be a string"));
+                        },
 
                         _ => warn!("Unrecognised attribute {:#?}", pair),
                     }
                 }
             }
         }
+
         let template_source = match (path, source) {
             (Some(path), None) => {
                 TemplateSource::Path(path)
@@ -148,9 +156,13 @@ impl TemplateDerivation {
             },
             _ => bail!("Exactly one of `source` or `path` attributes must be specfied in `#[template(...)]")
         };
-        // .ok_or_else(|| failure::err_msg("Missing path attribute"))?);
 
-        let res = TemplateDerivation { template_source };
+        let selector = template_selector.unwrap_or_else(|| ":root".to_string());
+
+        let res = TemplateDerivation {
+            template_source,
+            selector,
+        };
 
         Ok(res)
     }
@@ -250,5 +262,15 @@ mod tests {
             quote!(#[template(source = "<p>foo</p><p>bar</p>", selector = "p")]
             struct MultipleRoots;).into(),
         );
+    }
+
+    #[test]
+    fn will_extract_selector() {
+        let deriv = parse_quote!(#[template(path = "hello.html", selector = "#hello-world")]
+        struct X;);
+
+        let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
+
+        assert_eq!(conf.selector, "#hello-world");
     }
 }

@@ -86,10 +86,7 @@ fn parse_path(path: &Path) -> Result<NodeRef, Error> {
         .from_file(&path)
         .with_context(|_| format!("Parsing template from path {:?}", &path))?;
 
-    let content = find_root_from(root)
-        .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
-
-    Ok(content)
+    Ok(root)
 }
 
 fn parse_source(source: &str) -> Result<NodeRef, Error> {
@@ -97,10 +94,8 @@ fn parse_source(source: &str) -> Result<NodeRef, Error> {
     let parser = kuchiki::parse_html();
 
     let root = parser.one(source);
-    let content = find_root_from(root)
-        .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
 
-    Ok(content)
+    Ok(root)
 }
 
 fn find_root_from(node: NodeRef) -> Option<NodeRef> {
@@ -176,13 +171,18 @@ impl TemplateDerivation {
     }
 
     fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<NodeRef, Error> {
-        match &self.template_source {
+        let root = match &self.template_source {
             TemplateSource::Path(ref path) => {
                 let path = PathBuf::from(root_dir.as_ref()).join(path);
-                Ok(parse_path(&path)?)
+                parse_path(&path)?
             }
-            TemplateSource::Source(ref source) => Ok(parse_source(source)?),
-        }
+            TemplateSource::Source(ref source) => parse_source(source)?,
+        };
+
+        let content = find_root_from(root)
+            .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
+
+        Ok(content)
     }
 }
 

@@ -1,18 +1,19 @@
 [package]
 authors = ["Ceri Storey <cez@necrofish.org.uk>"]
-name = "weft_derive"
-description = "HTML templating with composability in mind"
-license = "Apache-2.0"
-version = "0.1.1"
-repository = "https://github.com/cstorey/weft"
-readme = "../README.md"
 categories = ["web-programming", "template-engine"]
+description = "HTML templating with composability in mind"
 documentation = "https://docs.rs/weft_derive"
+license = "Apache-2.0"
+name = "weft_derive"
+readme = "../README.md"
+repository = "https://github.com/cstorey/weft"
+version = "0.1.1"
 
 [dependencies]
 env_logger = "0.5.13"
 failure = "0.1.3"
 html5ever = "0.22.3"
+kuchiki = "0.7.2"
 log = "0.4.5"
 proc-macro2 = "0.4.20"
 quote = "0.6"

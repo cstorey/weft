@@ -14,8 +14,8 @@ extern crate log;
 extern crate env_logger;
 #[macro_use]
 extern crate syn;
-#[macro_use]
 extern crate html5ever;
+extern crate kuchiki;
 extern crate regex;
 
 mod derive_renderable;
@@ -23,10 +23,8 @@ mod inline_parse;
 use derive_renderable::*;
 
 use failure::{Error, ResultExt};
-use html5ever::parse_fragment;
-use html5ever::rcdom::{Handle, NodeData, RcDom};
 use html5ever::tendril::TendrilSink;
-use html5ever::QualName;
+use kuchiki::NodeRef;
 use proc_macro::TokenStream;
 use quote::ToTokens;
 use std::path::{Path, PathBuf};
@@ -75,54 +73,46 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
     let config = TemplateDerivation::from_derive(&item).context("find template")?;
     let dom = config.load_relative_to(&root_dir())?;
 
-    let impl_body = derive_impl(&dom, item)?;
+    let impl_body = derive_impl(dom, item)?;
 
     Ok(impl_body.into_token_stream())
 }
 
-fn parse_path(path: &Path) -> Result<Vec<Handle>, Error> {
+fn parse_path(path: &Path) -> Result<NodeRef, Error> {
     info!("Using template from {:?}", path);
-    let root_name = QualName::new(None, ns!(html), local_name!("html"));
-    let parser =
-        parse_fragment(RcDom::default(), Default::default(), root_name, Vec::new()).from_utf8();
+    let parser = kuchiki::parse_html().from_utf8();
 
-    let dom = parser
+    let root = parser
         .from_file(&path)
         .with_context(|_| format!("Parsing template from path {:?}", &path))?;
 
-    let content = find_root_from(dom.document)
+    let content = find_root_from(root)
         .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
 
     Ok(content)
 }
 
-fn parse_source(source: &str) -> Result<Vec<Handle>, Error> {
+fn parse_source(source: &str) -> Result<NodeRef, Error> {
     info!("Using inline template");
-    let root_name = QualName::new(None, ns!(html), local_name!("html"));
-    let parser = parse_fragment(RcDom::default(), Default::default(), root_name, Vec::new());
+    let parser = kuchiki::parse_html();
 
-    let dom = parser.one(source);
-    let content = find_root_from(dom.document)
+    let root = parser.one(source);
+    let content = find_root_from(root)
         .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
 
     Ok(content)
 }
 
-fn find_root_from(node: Handle) -> Option<Vec<Handle>> {
-    let root_name = QualName::new(None, ns!(html), local_name!("html"));
-    match node.data {
-        NodeData::Element { ref name, .. } => {
-            if name == &root_name {
-                return Some(node.children.borrow().clone());
-            }
+fn find_root_from(node: NodeRef) -> Option<NodeRef> {
+    let selector = ":root";
+    if let Ok(mut roots) = node.select(selector) {
+        let first = roots.next()?;
+        if let Some(_) = roots.next() {
+            warn!("Selector {} returns more than one match", selector);
+            return None;
         }
-        _ => {}
-    }
-    let children = node.children.borrow();
-    for child in children.iter() {
-        if let Some(it) = find_root_from(child.clone()) {
-            return Some(it);
-        }
+
+        return Some(first.as_node().clone());
     }
 
     None
@@ -185,7 +175,7 @@ impl TemplateDerivation {
         Ok(res)
     }
 
-    fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<Vec<Handle>, Error> {
+    fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<NodeRef, Error> {
         match &self.template_source {
             TemplateSource::Path(ref path) => {
                 let path = PathBuf::from(root_dir.as_ref()).join(path);
@@ -249,5 +239,16 @@ mod tests {
         let parsed = syn::parse2(deriv.clone()).expect("parse");
         let res = TemplateDerivation::from_derive(&parsed);
         assert!(res.is_err(), "Template {} should not parse", deriv)
+    }
+
+    #[test]
+    #[should_panic]
+    fn cannot_parse_with_multiple_root_matches() {
+        env_logger::try_init().unwrap_or_default();
+
+        let _ = derive_template(
+            quote!(#[template(source = "<p>foo</p><p>bar</p>", selector = "p")]
+            struct MultipleRoots;).into(),
+        );
     }
 }

@@ -1,8 +1,7 @@
 use failure::Error;
-use html5ever::rcdom::{Handle, NodeData};
-use html5ever::tendril::StrTendril;
-use html5ever::QualName;
 use inline_parse::{parse_inline, Segment, Substitutable};
+use kuchiki::iter::Siblings;
+use kuchiki::{ElementData, ExpandedName, NodeData, NodeRef};
 use proc_macro2::TokenStream as TokenStream2;
 use syn;
 
@@ -31,9 +30,9 @@ struct IteratorDecl {
     expr: syn::Expr,
 }
 
-fn render_to_fn(nodes: &[Handle]) -> Result<TokenStream2, Error> {
+fn render_to_fn(nodes: NodeRef) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
-    let impl_body = walker.children(nodes)?;
+    let impl_body = walker.children(nodes.children())?;
     Ok(quote! {
             fn render_to<__weft_R: ::weft::RenderTarget>(&self, __weft_target: &mut __weft_R) -> Result<(), ::std::io::Error> {
                 use ::weft::prelude::*;
@@ -43,7 +42,7 @@ fn render_to_fn(nodes: &[Handle]) -> Result<TokenStream2, Error> {
     })
 }
 
-pub fn derive_impl(nodes: &[Handle], mut item: syn::DeriveInput) -> Result<TokenStream2, Error> {
+pub fn derive_impl(nodes: NodeRef, mut item: syn::DeriveInput) -> Result<TokenStream2, Error> {
     info!("Deriving implementation for {}", item.ident);
     let render_to_fn_impl = render_to_fn(nodes)?;
 
@@ -78,71 +77,60 @@ pub fn derive_impl(nodes: &[Handle], mut item: syn::DeriveInput) -> Result<Token
 }
 
 impl Walker {
-    fn dom(&self, node: &Handle) -> Result<TokenStream2, Error> {
-        match node.data {
-            NodeData::Document => {
-                let ts = self.children(&node.children.borrow())?;
+    fn dom(&self, node: NodeRef) -> Result<TokenStream2, Error> {
+        match node.data() {
+            NodeData::Document(_) => {
+                let ts = self.children(node.children())?;
                 trace!("Document => {}", ts);
                 Ok(ts)
             }
-            NodeData::Element {
-                ref name,
-                ref attrs,
-                ..
-            } => {
-                let ts = self.element(name, &attrs.borrow(), &node.children.borrow())?;
-                trace!("Element: {:?}:{:?}", name, attrs);
+            NodeData::Element(data) => {
+                trace!("Element: {:?}", data);
+                let ts = self.element(data, node.children())?;
                 trace!("Element => {}", ts);
                 Ok(ts)
             }
-            NodeData::Text { ref contents } => {
+            NodeData::Text(ref contents) => {
                 let ts = self.text(&*contents.borrow())?;
                 trace!("Text => {}", ts);
                 Ok(ts)
             }
             NodeData::Doctype { .. } => {
-                debug!(
-                    "Ignoring doctype: children: {:?}",
-                    node.children.borrow().len()
-                );
+                debug!("Ignoring doctype: children: {:?}", node.children().count());
                 Ok(TokenStream2::default())
             }
             NodeData::Comment { .. } => {
-                debug!(
-                    "Ignoring comment: children: {:?}",
-                    node.children.borrow().len()
-                );
+                debug!("Ignoring comment: children: {:?}", node.children().count());
                 Ok(TokenStream2::default())
             }
             NodeData::ProcessingInstruction { .. } => {
                 debug!(
                     "Ignoring processing instruction: children: {:?}",
-                    node.children.borrow().len()
+                    node.children().count()
                 );
+                Ok(TokenStream2::default())
+            }
+            NodeData::DocumentFragment => {
+                debug!("Ignoring document fragment: {:?}", node.children().count());
                 Ok(TokenStream2::default())
             }
         }
     }
 
-    fn children(&self, nodes: &[Handle]) -> Result<TokenStream2, Error> {
+    fn children(&self, nodes: Siblings) -> Result<TokenStream2, Error> {
         let mut res = TokenStream2::new();
-        for child in nodes.iter() {
-            res.extend(self.dom(&child)?);
+        for child in nodes {
+            res.extend(self.dom(child)?);
         }
 
         Ok(res)
     }
 
-    fn element(
-        &self,
-        name: &QualName,
-        attrs: &[html5ever::Attribute],
-        children: &[Handle],
-    ) -> Result<TokenStream2, Error> {
-        let localname = name.local.to_string();
-        trace!("Start Element {:?}: {:?}", name, attrs);
+    fn element(&self, data: &ElementData, children: Siblings) -> Result<TokenStream2, Error> {
+        let localname = data.name.local.to_string();
+        trace!("Start Element {:?}", data);
 
-        let directive = Directives::parse_from_attrs(attrs)?;
+        let directive = Directives::parse_from_attrs(&data.attributes.borrow())?;
         let res = if let Some(repl) = directive.replacement {
             quote!(#repl.render_to(__weft_target)?;)
         } else if let Some(content) = directive.content {
@@ -164,11 +152,11 @@ impl Walker {
         } else {
             res
         };
-        trace!("End Element {:?}", name);
+        trace!("End Element {:?}", data);
 
         Ok(res)
     }
-    fn text(&self, contents: &StrTendril) -> Result<TokenStream2, Error> {
+    fn text(&self, contents: &str) -> Result<TokenStream2, Error> {
         let mut result = TokenStream2::new();
         let cdata = contents.to_string();
         trace!("Text {:?}", cdata);
@@ -218,31 +206,31 @@ impl Walker {
 }
 
 impl Directives {
-    fn parse_from_attrs(attrs: &[html5ever::Attribute]) -> Result<Self, Error> {
+    fn parse_from_attrs(attrs: &kuchiki::Attributes) -> Result<Self, Error> {
         let mut it = Self::default();
-        for at in attrs {
-            match &*at.name.local {
+        for (name, value) in attrs.map.iter() {
+            match &*name.local {
                 "weft-replace" => {
-                    let replacement = syn::parse_str(at.value.as_ref())
+                    let replacement = syn::parse_str(&value.value)
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.replacement = Some(replacement)
                 }
                 "weft-content" => {
-                    let content = syn::parse_str(at.value.as_ref())
+                    let content = syn::parse_str(&value.value)
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.content = Some(content)
                 }
                 "weft-if" => {
-                    let test = syn::parse_str(at.value.as_ref())
+                    let test = syn::parse_str(&value.value)
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.conditional = Some(test)
                 }
                 "weft-for" => {
-                    let iterator = syn::parse_str(at.value.as_ref())
+                    let iterator = syn::parse_str(&value.value)
                         .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
                     it.iterator = Some(iterator)
                 }
-                _ => it.plain_attrs.push(Attribute::parse(at)?),
+                _ => it.plain_attrs.push(Attribute::parse(name, value)?),
             }
         }
 
@@ -251,9 +239,9 @@ impl Directives {
 }
 
 impl Attribute {
-    fn parse(input: &html5ever::Attribute) -> Result<Self, Error> {
-        let name: String = input.name.local.to_string();
-        let value = parse_inline(&input.value.to_string())?;
+    fn parse(name: &ExpandedName, value: &kuchiki::Attribute) -> Result<Self, Error> {
+        let name: String = name.local.to_string();
+        let value = parse_inline(&value.value)?;
 
         Ok(Attribute { name, value })
     }

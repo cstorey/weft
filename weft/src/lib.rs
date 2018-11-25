@@ -28,3 +28,8 @@ mod extensions;
 mod template;
 
 pub use template::*;
+
+/// A module for things that should be in-scope by default in a template expression.
+pub mod prelude {
+    pub use extensions::*;
+}

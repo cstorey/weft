@@ -5,6 +5,7 @@ extern crate weft_derive;
 use regex::*;
 use std::io;
 use std::iter;
+use std::fmt;
 use weft::*;
 
 #[test]
@@ -76,4 +77,21 @@ fn render_supports_builtins() {
         s,
         expected
     );
+}
+
+#[test]
+fn display_supports_displayable() {
+    struct Displayable<D>(D);
+    // This simulates what a template of the form `<p>Hello</p>` should compile to.
+    impl<D: fmt::Display> WeftRenderable for Displayable<D> {
+        fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
+            use weft::prelude::*;
+            self.0.display().render_to(target)?;
+            Ok(())
+        }
+    }
+
+    let s = render_to_string(Displayable(42)).expect("render_to_string");
+    let expected = "42";
+    assert_eq!(s, expected);
 }

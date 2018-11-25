@@ -3,9 +3,9 @@ extern crate weft;
 extern crate weft_derive;
 
 use regex::*;
+use std::fmt;
 use std::io;
 use std::iter;
-use std::fmt;
 use weft::*;
 
 #[test]

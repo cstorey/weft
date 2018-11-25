@@ -41,12 +41,37 @@ fn should_allow_inline_source() {
     )
 }
 
+#[cfg(never)]
 #[test]
-fn should_not_include_enclosing_html_tags() {
-    let s = weft::render_to_string(TrivialMarkup).expect("render_to_string");
+fn should_render_entire_document() {
+    #[derive(WeftRenderable)]
+    #[template(source = "<html><head><title>hi</title></head></html>")]
+    struct Canary;
+    let s = weft::render_to_string(Canary).expect("render_to_string");
     println!("{}", s);
 
-    let unexpected = "<html>";
+    let expected = "<title>hi</";
+    assert!(
+        s.contains(expected),
+        "String {:?} contains {:?}",
+        s,
+        expected
+    )
+}
+
+#[cfg(never)]
+#[test]
+fn can_render_portion_of_document() {
+    #[derive(WeftRenderable)]
+    #[template(
+        source = "<html><body><div id='spam'><p id='hi'>hi</p></body></html>",
+        selector = "#hi"
+    )]
+    struct Canary;
+    let s = weft::render_to_string(Canary).expect("render_to_string");
+    println!("{}", s);
+
+    let unexpected = "<div ";
     assert!(
         !s.contains(unexpected),
         "String {:?} contains {:?}",

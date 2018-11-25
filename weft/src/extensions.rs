@@ -1,4 +1,4 @@
-use std::{io,fmt};
+use std::{fmt, io};
 use template::{RenderTarget, WeftRenderable};
 
 /// A helper struct for the `Displayable` trait.
@@ -9,7 +9,6 @@ pub trait Displayable: Sized {
     /// Extension method for types that implement fmt::Display
     fn display(&self) -> Displayer<Self>;
 }
-
 
 impl<D: fmt::Display> Displayable for D {
     fn display(&self) -> Displayer<D> {

@@ -294,7 +294,6 @@ fn should_allow_disabling_inline_exprs() {
     )
 }
 
-#[cfg(never)]
 #[test]
 fn should_import_displayable() {
     #[derive(WeftRenderable)]

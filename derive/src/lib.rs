@@ -176,18 +176,18 @@ impl TemplateDerivation {
             TemplateSource::Source(ref source) => parse_source(source)?,
         };
 
-        let content = Self::find_root_from(root)
+        let content = self
+            .find_root_from(root)
             .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
 
         Ok(content)
     }
 
-    fn find_root_from(node: NodeRef) -> Option<NodeRef> {
-        let selector = ":root";
-        if let Ok(mut roots) = node.select(selector) {
+    fn find_root_from(&self, node: NodeRef) -> Option<NodeRef> {
+        if let Ok(mut roots) = node.select(&self.selector) {
             let first = roots.next()?;
             if let Some(_) = roots.next() {
-                warn!("Selector {} returns more than one match", selector);
+                warn!("Selector {} returns more than one match", self.selector);
                 return None;
             }
 

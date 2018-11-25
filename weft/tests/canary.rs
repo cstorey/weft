@@ -59,7 +59,6 @@ fn should_render_entire_document() {
     )
 }
 
-#[cfg(never)]
 #[test]
 fn can_render_portion_of_document() {
     #[derive(WeftRenderable)]
@@ -74,7 +73,7 @@ fn can_render_portion_of_document() {
     let unexpected = "<div ";
     assert!(
         !s.contains(unexpected),
-        "String {:?} contains {:?}",
+        "String {:?} should not contain {:?}",
         s,
         unexpected
     )

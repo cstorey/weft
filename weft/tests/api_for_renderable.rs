@@ -80,7 +80,7 @@ fn render_supports_builtins() {
 }
 
 #[test]
-fn display_supports_displayable() {
+fn display_supports_renderable() {
     struct Displayable<D>(D);
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl<D: fmt::Display> WeftRenderable for Displayable<D> {
@@ -95,3 +95,27 @@ fn display_supports_displayable() {
     let expected = "42";
     assert_eq!(s, expected);
 }
+
+#[test]
+fn display_supports_to_string() {
+    struct Displayable<D>(D);
+    // This simulates what a template of the form `<p>Hello</p>` should compile to.
+    impl<D: fmt::Display> WeftRenderable for Displayable<D> {
+        fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
+            use weft::prelude::*;
+            target.start_element_attrs(
+                "p".into(),
+                std::iter::once(&weft::AttrPair::new("x", self.0.display().to_string())),
+            )?;
+            Ok(())
+        }
+    }
+
+    let s = render_to_string(Displayable(23)).expect("render_to_string");
+    let expected = "=\"23\"";
+    assert!(
+        s.contains(expected),
+        "String {:?} contains {:?}",
+        s,
+        expected
+    );}

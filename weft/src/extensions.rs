@@ -30,6 +30,12 @@ impl WeftRenderable for String {
 
 impl<'a, D: fmt::Display> WeftRenderable for Displayer<'a, D> {
     fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
-        target.text(&format!("{}", self.0))
+        target.text(&self.to_string())
+    }
+}
+
+impl<'a, D: fmt::Display> ToString for Displayer<'a, D> {
+    fn to_string(&self) -> String {
+        format!("{}", self.0)
     }
 }

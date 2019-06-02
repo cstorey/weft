@@ -30,6 +30,7 @@ jobs:
           RUSTFLAGS: -D warnings
     steps:
       - checkout
+      - run: git merge master
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
       - *SAVE_REGISTRY

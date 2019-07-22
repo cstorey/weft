@@ -10,7 +10,7 @@ categories = ["web-programming", "template-engine"]
 documentation = "https://docs.rs/weft"
 
 [dependencies]
-html5ever = "0.23.0"
+html5ever = "0.24.0"
 markup5ever = "0.8.1"
 
 [dependencies.weft_derive]

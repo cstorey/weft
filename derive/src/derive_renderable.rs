@@ -1,5 +1,5 @@
+use crate::inline_parse::{parse_inline, Segment, Substitutable};
 use failure::Error;
-use inline_parse::{parse_inline, Segment, Substitutable};
 use kuchiki::iter::Siblings;
 use kuchiki::{ElementData, ExpandedName, NodeData, NodeRef};
 use proc_macro2::TokenStream as TokenStream2;

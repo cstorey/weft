@@ -1,5 +1,5 @@
+use crate::template::{RenderTarget, WeftRenderable};
 use std::{fmt, io};
-use template::{RenderTarget, WeftRenderable};
 
 /// A helper struct for the `Displayable` trait.
 pub struct Displayer<'a, D: 'a>(&'a D);

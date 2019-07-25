@@ -53,7 +53,8 @@ pub fn derive_impl(nodes: NodeRef, mut item: syn::DeriveInput) -> Result<TokenSt
         .map(|p| {
             let name = &p.ident;
             parse_quote!(#name : ::weft::WeftRenderable)
-        }).collect::<Vec<syn::WherePredicate>>();
+        })
+        .collect::<Vec<syn::WherePredicate>>();
 
     {
         let where_clause = item
@@ -193,14 +194,14 @@ impl Walker {
         );
         let mut statements = TokenStream2::new();
         statements.extend(quote!(
-                __weft_target.start_element_attrs(#localname.into(), #attrs_q)?;
-            ));
+            __weft_target.start_element_attrs(#localname.into(), #attrs_q)?;
+        ));
 
         statements.extend(content);
 
         statements.extend(quote!(
-                __weft_target.end_element(#localname.into())?;
-            ));
+            __weft_target.end_element(#localname.into())?;
+        ));
         Ok(statements)
     }
 }

@@ -201,7 +201,7 @@ fn should_support_iteration() {
 }
 
 #[derive(WeftRenderable)]
-#[template(path = "tests/content.html",)]
+#[template(path = "tests/content.html")]
 struct WithPolyContent<C> {
     // Need a way to declare which type variables need to have `WeftRenderable`
     // constraints when we declare the struct WeftRenderable impl.

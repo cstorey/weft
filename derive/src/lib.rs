@@ -121,25 +121,33 @@ impl TemplateDerivation {
             if let syn::NestedMeta::Meta(ref item) = meta {
                 if let syn::Meta::NameValue(ref pair) = item {
                     match pair.ident.to_string().as_ref() {
-                        "path" => if let syn::Lit::Str(ref s) = pair.lit {
-                            path = Some(PathBuf::from(s.value()));
-                        } else {
-                            return Err(failure::err_msg(
-                                "template path attribute should be a string",
-                            ));
-                        },
-                        "source" => if let syn::Lit::Str(ref s) = pair.lit {
-                            source = Some(s.value())
-                        } else {
-                            return Err(failure::err_msg(
-                                "template path attribute should be a string",
-                            ));
-                        },
-                        "selector" => if let syn::Lit::Str(ref s) = pair.lit {
-                            template_selector = Some(s.value())
-                        } else {
-                            return Err(failure::err_msg("template selector should be a string"));
-                        },
+                        "path" => {
+                            if let syn::Lit::Str(ref s) = pair.lit {
+                                path = Some(PathBuf::from(s.value()));
+                            } else {
+                                return Err(failure::err_msg(
+                                    "template path attribute should be a string",
+                                ));
+                            }
+                        }
+                        "source" => {
+                            if let syn::Lit::Str(ref s) = pair.lit {
+                                source = Some(s.value())
+                            } else {
+                                return Err(failure::err_msg(
+                                    "template path attribute should be a string",
+                                ));
+                            }
+                        }
+                        "selector" => {
+                            if let syn::Lit::Str(ref s) = pair.lit {
+                                template_selector = Some(s.value())
+                            } else {
+                                return Err(failure::err_msg(
+                                    "template selector should be a string",
+                                ));
+                            }
+                        }
 
                         _ => warn!("Unrecognised attribute {:#?}", pair),
                     }
@@ -203,7 +211,8 @@ fn root_dir() -> PathBuf {
         .unwrap_or_else(|_| {
             warn!("Environment variable $CARGO_MANIFEST_DIR not set, assuming .");
             ".".into()
-        }).into()
+        })
+        .into()
 }
 
 #[cfg(test)]
@@ -211,8 +220,10 @@ mod tests {
     use super::*;
     #[test]
     fn can_parse_with_path() {
-        let deriv = parse_quote!(#[template(path = "hello.html")]
-        struct X;);
+        let deriv = parse_quote!(
+            #[template(path = "hello.html")]
+            struct X;
+        );
 
         let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
 
@@ -225,8 +236,10 @@ mod tests {
     #[test]
     fn can_parse_with_source() {
         let source = "<p>Stuff</p>";
-        let deriv = parse_quote!(#[template(source = #source)]
-        struct X;);
+        let deriv = parse_quote!(
+            #[template(source = #source)]
+            struct X;
+        );
 
         let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
 
@@ -235,8 +248,10 @@ mod tests {
 
     #[test]
     fn cannot_parse_with_neither_source_or_path() {
-        let deriv = quote!(#[template()]
-        struct X;);
+        let deriv = quote!(
+            #[template()]
+            struct X;
+        );
 
         let parsed = syn::parse2(deriv.clone()).expect("parse");
         let res = TemplateDerivation::from_derive(&parsed);
@@ -245,8 +260,10 @@ mod tests {
 
     #[test]
     fn cannot_parse_with_both_source_or_path() {
-        let deriv = quote!(#[template(source = "...", path = "...")]
-        struct X;);
+        let deriv = quote!(
+            #[template(source = "...", path = "...")]
+            struct X;
+        );
 
         let parsed = syn::parse2(deriv.clone()).expect("parse");
         let res = TemplateDerivation::from_derive(&parsed);
@@ -259,15 +276,20 @@ mod tests {
         env_logger::try_init().unwrap_or_default();
 
         let _ = derive_template(
-            quote!(#[template(source = "<p>foo</p><p>bar</p>", selector = "p")]
-            struct MultipleRoots;).into(),
+            quote!(
+                #[template(source = "<p>foo</p><p>bar</p>", selector = "p")]
+                struct MultipleRoots;
+            )
+            .into(),
         );
     }
 
     #[test]
     fn will_extract_selector() {
-        let deriv = parse_quote!(#[template(path = "hello.html", selector = "#hello-world")]
-        struct X;);
+        let deriv = parse_quote!(
+            #[template(path = "hello.html", selector = "#hello-world")]
+            struct X;
+        );
 
         let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
 

@@ -118,4 +118,5 @@ fn display_supports_to_string() {
         "String {:?} contains {:?}",
         s,
         expected
-    );}
+    );
+}

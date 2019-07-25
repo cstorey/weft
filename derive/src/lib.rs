@@ -46,14 +46,29 @@ struct TemplateDerivation {
 /// Requires the user pass an additional `#[template(...)]` attribute to
 /// specify either a path (relative to the crate root) or template source.
 ///
-/// ## Configuration
+/// ## `#[template(…)]` attributes
 /// Options are specified as `parameter = value`, and have the following meanings:
 ///
-/// ### Finding the template source.
-/// * `path`: The path of the template relative to the crate root.
-///           Must be present at compile time.
-/// * `source`: The template source specified inline as a string.
+/// ### `path`: Finding the template source.
+/// The path of the template relative to the crate root.
+/// Must be present at compile time.
 ///
+/// ```rust
+///    use weft_derive::*;
+///    #[derive(WeftRenderable)]
+///    #[template(path = "tests/hello.html")]
+///    struct Greeting(String);
+/// ```
+///
+///  ### `source`: The template source specified inline as a string.
+///
+///
+/// ```rust
+///    use weft_derive::*;
+///    #[derive(WeftRenderable)]
+///    #[template(source = "<p>Hello {{ self.0 }}!</p>")]
+///    struct Greeting(String);
+/// ```
 /// One of `path` or `source` must be specified.
 
 #[proc_macro_derive(WeftRenderable, attributes(template))]

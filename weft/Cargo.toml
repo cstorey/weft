@@ -8,6 +8,7 @@ repository = "https://github.com/cstorey/weft"
 readme = "../README.md"
 categories = ["web-programming", "template-engine"]
 documentation = "https://docs.rs/weft"
+edition = "2018"
 
 [dependencies]
 html5ever = "0.24.0"

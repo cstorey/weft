@@ -44,6 +44,29 @@ This crate (`weft`) provides runtime support for `weft` templates, which are com
         // Should print `<p>Hello world!<p>`
     }
 ```
+
+## Deriving options:
+
+### `source`
+
+Specify the template body as a string in-line with the source code.
+
+```rust
+   #[derive(weft::WeftRenderable)]
+   #[template(source = "<p>Hello {{ self.0 }}!</p>")]
+   struct Greeting(String);
+```
+
+### `path`
+
+Specifies the location of the html file to use relative to the crate root.
+
+```rust
+   #[derive(weft::WeftRenderable)]
+   #[template(source = "<p>Hello {{ self.0 }}!</p>")]
+   struct Greeting(String);
+```
+
 */
 
 #[macro_use]

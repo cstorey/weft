@@ -6,9 +6,9 @@ This module provides runtime support for `weft` templates.
 ## Example:
 
 ```rust
-   #[macro_use]
-   extern crate weft_derive;
-   extern crate weft;
+   # #[macro_use]
+   # extern crate weft_derive;
+   # extern crate weft;
    #[derive(WeftRenderable)]
    #[template(source = "<p>Hello {{ self.0 }}!</p>")]
    struct Greeting(String);

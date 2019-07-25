@@ -20,7 +20,7 @@ extern crate regex;
 
 mod derive_renderable;
 mod inline_parse;
-use derive_renderable::*;
+use crate::derive_renderable::*;
 
 use failure::{Error, ResultExt};
 use html5ever::tendril::TendrilSink;

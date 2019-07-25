@@ -27,9 +27,9 @@ extern crate html5ever;
 mod extensions;
 mod template;
 
-pub use template::*;
+pub use crate::template::*;
 
 /// A module for things that should be in-scope by default in a template expression.
 pub mod prelude {
-    pub use extensions::*;
+    pub use crate::extensions::*;
 }

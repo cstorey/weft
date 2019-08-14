@@ -101,15 +101,21 @@ fn parse_source(source: &str) -> Result<NodeRef, Error> {
 
 impl TemplateDerivation {
     fn from_derive(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
-        let attr = item
+        let template_path = syn::parse_str::<syn::Path>("template")?;
+        let attrs = item
             .attrs
             .iter()
-            .filter_map(|a| a.interpret_meta())
+            .map(|a| a.parse_meta())
             .inspect(|a| info!("Attribute: {:#?}", a))
-            .find(|a| a.name() == "template")
+            .collect::<Result<Vec<_>, _>>()?;
+        let attr = attrs
+            .into_iter()
+            .find(|a| a.path() == &template_path)
             .ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
 
         let meta_list = match attr {
+            // Should we use [`MetaNameValue`](https://docs.rs/syn/1.0.1/syn/struct.MetaNameValue.html)
+            // here instead?
             syn::Meta::List(inner) => inner,
             _ => return Err(failure::err_msg("template attribute incorrectly formatted")),
         };
@@ -120,36 +126,33 @@ impl TemplateDerivation {
         for meta in meta_list.nested {
             if let syn::NestedMeta::Meta(ref item) = meta {
                 if let syn::Meta::NameValue(ref pair) = item {
-                    match pair.ident.to_string().as_ref() {
-                        "path" => {
-                            if let syn::Lit::Str(ref s) = pair.lit {
-                                path = Some(PathBuf::from(s.value()));
-                            } else {
-                                return Err(failure::err_msg(
-                                    "template path attribute should be a string",
-                                ));
-                            }
+                    if pair.path.is_ident("path") {
+                        if let syn::Lit::Str(ref s) = pair.lit {
+                            path = Some(PathBuf::from(s.value()));
+                        } else {
+                            return Err(failure::err_msg(
+                                "template path attribute should be a string",
+                            ));
                         }
-                        "source" => {
-                            if let syn::Lit::Str(ref s) = pair.lit {
-                                source = Some(s.value())
-                            } else {
-                                return Err(failure::err_msg(
-                                    "template path attribute should be a string",
-                                ));
-                            }
+                    } else if pair.path.is_ident("source") {
+                        if let syn::Lit::Str(ref s) = pair.lit {
+                            source = Some(s.value())
+                        } else {
+                            return Err(failure::err_msg(
+                                "template source attribute should be a string",
+                            ));
                         }
-                        "selector" => {
-                            if let syn::Lit::Str(ref s) = pair.lit {
-                                template_selector = Some(s.value())
-                            } else {
-                                return Err(failure::err_msg(
-                                    "template selector should be a string",
-                                ));
-                            }
+                    } else if pair.path.is_ident("selector") {
+                        if let syn::Lit::Str(ref s) = pair.lit {
+                            template_selector = Some(s.value())
+                        } else {
+                            return Err(failure::err_msg("template selector should be a string"));
                         }
-
-                        _ => warn!("Unrecognised attribute {:#?}", pair),
+                    } else {
+                        return Err(failure::err_msg(format!(
+                            "Unrecognised attribute {:#?}",
+                            pair
+                        )));
                     }
                 }
             }

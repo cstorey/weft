@@ -102,18 +102,18 @@ fn parse_source(source: &str) -> Result<NodeRef, Error> {
 impl TemplateDerivation {
     fn from_derive(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
         let template_path = syn::parse_str::<syn::Path>("template")?;
-        let attrs = item
+        let mut attrs = item
             .attrs
             .iter()
-            .map(|a| a.parse_meta())
-            .inspect(|a| info!("Attribute: {:#?}", a))
-            .collect::<Result<Vec<_>, _>>()?;
-        let attr = attrs
-            .into_iter()
-            .find(|a| a.path() == &template_path)
-            .ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
+            .filter(|a| a.path == template_path)
+            .inspect(|a| info!("Attribute: {:#?}", a));
+        let attr = attrs.next().ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
 
-        let meta_list = match attr {
+        if attrs.next().is_some() {
+            bail!("Can only process a single #[template(…)] attribute")
+        }
+
+        let meta_list = match attr.parse_meta()? {
             // Should we use [`MetaNameValue`](https://docs.rs/syn/1.0.1/syn/struct.MetaNameValue.html)
             // here instead?
             syn::Meta::List(inner) => inner,
@@ -265,6 +265,19 @@ mod tests {
     fn cannot_parse_with_both_source_or_path() {
         let deriv = quote!(
             #[template(source = "...", path = "...")]
+            struct X;
+        );
+
+        let parsed = syn::parse2(deriv.clone()).expect("parse");
+        let res = TemplateDerivation::from_derive(&parsed);
+        assert!(res.is_err(), "Template {} should not parse", deriv)
+    }
+
+    #[test]
+    fn cannot_parse_with_multiple_attributes() {
+        let deriv = quote!(
+            #[template(source = "...")]
+            #[template(source = "...")]
             struct X;
         );
 

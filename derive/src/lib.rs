@@ -99,62 +99,61 @@ fn parse_source(source: &str) -> Result<NodeRef, Error> {
     Ok(root)
 }
 
+#[derive(Clone, Debug)]
+enum TemplateArg {
+    Path(PathBuf),
+    Source(String),
+    Selector(String),
+}
+
+impl syn::parse::Parse for TemplateArg {
+    fn parse(buf: &syn::parse::ParseBuffer) -> Result<Self, syn::parse::Error> {
+        let id: syn::Ident = buf.parse()?;
+        let _eq: Token![=] = buf.parse()?;
+        if id == "path" {
+            let path: syn::LitStr = buf.parse()?;
+            Ok(TemplateArg::Path(PathBuf::from(path.value())))
+        } else if id == "source" {
+            let source: syn::LitStr = buf.parse()?;
+            Ok(TemplateArg::Source(source.value()))
+        } else if id == "selector" {
+            let selector: syn::LitStr = buf.parse()?;
+            Ok(TemplateArg::Selector(selector.value()))
+        } else {
+            Err(buf.error(format!("Unrecognised template parameter: {}", id)))
+        }
+    }
+}
+
 impl TemplateDerivation {
     fn from_derive(item: &syn::DeriveInput) -> Result<TemplateDerivation, Error> {
         let template_path = syn::parse_str::<syn::Path>("template")?;
-        let attrs = item
+        let mut attrs = item
             .attrs
             .iter()
-            .map(|a| a.parse_meta())
-            .inspect(|a| info!("Attribute: {:#?}", a))
-            .collect::<Result<Vec<_>, _>>()?;
+            .filter(|a| a.path == template_path)
+            .inspect(|a| info!("Attribute: {:#?}", a));
         let attr = attrs
-            .into_iter()
-            .find(|a| a.path() == &template_path)
+            .next()
             .ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
 
-        let meta_list = match attr {
-            // Should we use [`MetaNameValue`](https://docs.rs/syn/1.0.1/syn/struct.MetaNameValue.html)
-            // here instead?
-            syn::Meta::List(inner) => inner,
-            _ => return Err(failure::err_msg("template attribute incorrectly formatted")),
-        };
+        if attrs.next().is_some() {
+            bail!("Can only process a single #[template(…)] attribute")
+        }
+
+        let parser =
+            syn::punctuated::Punctuated::<TemplateArg, Token![,]>::parse_separated_nonempty;
+        let args = attr.parse_args_with(parser)?;
 
         let mut path = None;
         let mut source = None;
         let mut template_selector = None;
-        for meta in meta_list.nested {
-            if let syn::NestedMeta::Meta(ref item) = meta {
-                if let syn::Meta::NameValue(ref pair) = item {
-                    if pair.path.is_ident("path") {
-                        if let syn::Lit::Str(ref s) = pair.lit {
-                            path = Some(PathBuf::from(s.value()));
-                        } else {
-                            return Err(failure::err_msg(
-                                "template path attribute should be a string",
-                            ));
-                        }
-                    } else if pair.path.is_ident("source") {
-                        if let syn::Lit::Str(ref s) = pair.lit {
-                            source = Some(s.value())
-                        } else {
-                            return Err(failure::err_msg(
-                                "template source attribute should be a string",
-                            ));
-                        }
-                    } else if pair.path.is_ident("selector") {
-                        if let syn::Lit::Str(ref s) = pair.lit {
-                            template_selector = Some(s.value())
-                        } else {
-                            return Err(failure::err_msg("template selector should be a string"));
-                        }
-                    } else {
-                        return Err(failure::err_msg(format!(
-                            "Unrecognised attribute {:#?}",
-                            pair
-                        )));
-                    }
-                }
+
+        for a in args {
+            match a {
+                TemplateArg::Path(p) => path = Some(p),
+                TemplateArg::Source(s) => source = Some(s),
+                TemplateArg::Selector(s) => template_selector = Some(s),
             }
         }
 
@@ -265,6 +264,19 @@ mod tests {
     fn cannot_parse_with_both_source_or_path() {
         let deriv = quote!(
             #[template(source = "...", path = "...")]
+            struct X;
+        );
+
+        let parsed = syn::parse2(deriv.clone()).expect("parse");
+        let res = TemplateDerivation::from_derive(&parsed);
+        assert!(res.is_err(), "Template {} should not parse", deriv)
+    }
+
+    #[test]
+    fn cannot_parse_with_multiple_attributes() {
+        let deriv = quote!(
+            #[template(source = "...")]
+            #[template(source = "...")]
             struct X;
         );
 

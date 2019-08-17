@@ -43,7 +43,7 @@ jobs:
       - *RESTORE_DEPS
       - run: cargo test --all
       - *SAVE_DEPS
-      - run: .circleci/mdbook-install.sh
-      - run: ./mdbook build docs
+      - run: .circleci/mdbook-install.sh "${HOME}/bin"
+      - run: mdbook build docs
       - store_artifacts:
           path: docs/book

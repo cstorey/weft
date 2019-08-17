@@ -40,3 +40,4 @@ jobs:
       - *RESTORE_DEPS
       - run: cargo test --all
       - *SAVE_DEPS
+      - run: .circleci/mdbook-install.sh

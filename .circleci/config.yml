@@ -47,4 +47,5 @@ jobs:
       - run: mdbook build docs
       - store_artifacts:
           path: docs/book
+      - run: .circleci/git-set-id.sh
       - run: .circleci/push-to-gh-pages.sh docs/book

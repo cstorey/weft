@@ -1,6 +1,10 @@
 version: 2
 jobs:
-  nada:
+  build:
+    docker:
+      - image: scratch
+    steps:
+      - run: "Hi!"
     branches:
       ignore:
         - /.*/

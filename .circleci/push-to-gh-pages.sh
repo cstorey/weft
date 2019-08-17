@@ -31,5 +31,5 @@ git -C "$dir" add .
 changes=$(git -C "$dir" diff --cached --shortstat | tee /dev/stderr)
 if [[ -n "$changes" ]]; then
     git -C "$dir" commit -m "Commit docs from $upstream at $version"
-    git -C "$dir" push "$upstream"
+    git -C "$dir" push "$upstream" "$target_branch"
 fi

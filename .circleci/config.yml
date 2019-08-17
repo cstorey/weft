@@ -51,4 +51,9 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "8c:f0:86:38:cf:6e:a0:23:c4:f5:85:12:ae:b6:f3:4b"
-      - run: .circleci/push-to-gh-pages.sh docs/book
+      - run: |
+          if [[ "$CIRCLE_BRANCH" = "master" ]]; then
+            .circleci/push-to-gh-pages.sh docs/book
+          else
+            echo 1>&2 "Not deploying docs as not on master; now on $CIRCLE_BRANCH"
+          fi

@@ -1,0 +1,6 @@
+[book]
+authors = ["Ceri Storey"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Weft Templating"

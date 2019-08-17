@@ -34,7 +34,7 @@ jobs:
       - run: |
           set -euxo pipefail
           echo >> "$BASH_ENV" 'export PATH=${HOME}/bin:$PATH'
-      - run: .circleci/shellcheck-install.sh
+      - run: .circleci/shellcheck-install.sh "${HOME}/bin"
       - run: .circleci/shellcheck-run.sh
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile

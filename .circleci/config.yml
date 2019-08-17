@@ -41,3 +41,4 @@ jobs:
       - run: cargo test --all
       - *SAVE_DEPS
       - run: .circleci/mdbook-install.sh
+      - run: ./mdbook build docs

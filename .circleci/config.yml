@@ -31,6 +31,11 @@ jobs:
     steps:
       - checkout
       - run: git merge master
+      - run: |
+          set -euxo pipefail
+          echo >> "$BASH_ENV" 'export PATH=${HOME}/bin:$PATH'
+      - run: .circleci/shellcheck-install.sh "${HOME}/bin"
+      - run: .circleci/shellcheck-run.sh
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
       - *SAVE_REGISTRY
@@ -38,3 +43,17 @@ jobs:
       - *RESTORE_DEPS
       - run: cargo test --all
       - *SAVE_DEPS
+      - run: .circleci/mdbook-install.sh "${HOME}/bin"
+      - run: mdbook build docs
+      - store_artifacts:
+          path: docs/book
+      - run: .circleci/git-set-id.sh
+      - add_ssh_keys:
+          fingerprints:
+            - "8c:f0:86:38:cf:6e:a0:23:c4:f5:85:12:ae:b6:f3:4b"
+      - run: |
+          if [[ "$CIRCLE_BRANCH" = "master" ]]; then
+            .circleci/push-to-gh-pages.sh docs/book
+          else
+            echo 1>&2 "Not deploying docs as not on master; now on $CIRCLE_BRANCH"
+          fi

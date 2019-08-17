@@ -31,6 +31,8 @@ jobs:
     steps:
       - checkout
       - run: git merge master
+      - run: .circleci/shellcheck-install.sh
+      - run: .circleci/shellcheck-run.sh
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
       - *SAVE_REGISTRY

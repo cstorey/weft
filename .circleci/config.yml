@@ -33,10 +33,7 @@ jobs:
       - run: git merge master
       - run: |
           set -euxo pipefail
-          echo >> "$BASH_ENV" CANARY=t
-      - run: |
-          set -euxo pipefail
-          echo "$CANARY"
+          echo >> "$BASH_ENV" 'export PATH=${HOME}/bin:$PATH'
       - run: .circleci/shellcheck-install.sh
       - run: .circleci/shellcheck-run.sh
       - *RESTORE_REGISTRY

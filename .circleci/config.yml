@@ -42,3 +42,5 @@ jobs:
       - *SAVE_DEPS
       - run: .circleci/mdbook-install.sh
       - run: ./mdbook build docs
+      - store_artifacts:
+          path: docs/book

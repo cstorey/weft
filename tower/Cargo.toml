@@ -1,0 +1,13 @@
+[package]
+name = "weft-tower"
+authors = ["Ceri Storey <cez@necrofish.org.uk>"]
+edition = "2018"
+description = "Tower-web support for Weft"
+license = "Apache-2.0"
+version = "0.1.1"
+repository = "https://github.com/cstorey/weft"
+readme = "../README.md"
+categories = ["web-programming", "template-engine", "actix"]
+documentation = "https://docs.rs/weft-tower"
+
+[dependencies]

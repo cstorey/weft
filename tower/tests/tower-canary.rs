@@ -51,10 +51,8 @@ fn should_render_from_handler() {
     info!("Querying: {}", url);
     // We've already created the socket, so we do not need to wait for it to
     // be bound.
-    let body = reqwest::get(&url)
-        .expect("Fetch URL")
-        .text()
-        .expect("content as text");
+    let mut resp = reqwest::get(&url).expect("Fetch URL");
+    let body = resp.text().expect("content as text");
 
     let expected = "My name is Bob";
     assert!(
@@ -63,6 +61,9 @@ fn should_render_from_handler() {
         body,
         expected
     );
+
+    // Drop response to ensure any open connections have been cleaned up.
+    drop(resp);
 
     p.send(()).expect("Send");
     t.join().expect("thread join");
@@ -92,8 +93,8 @@ fn should_produce_text_html() {
     let url = format!("http://{}/", addr);
     info!("Querying: {}", url);
 
-    let header = reqwest::get(&url)
-        .expect("Fetch URL")
+    let resp = reqwest::get(&url).expect("Fetch URL");
+    let header = resp
         .headers()
         .get(CONTENT_TYPE)
         .expect("Has content-type")
@@ -107,6 +108,9 @@ fn should_produce_text_html() {
         header_value,
         expected
     );
+
+    // Drop response to ensure any open connections have been cleaned up.
+    drop(resp);
 
     info!("Sending cancel");
     p.send(()).expect("Send");

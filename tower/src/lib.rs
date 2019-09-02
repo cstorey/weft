@@ -1,5 +1,7 @@
-use http;
-use http::status::StatusCode;
+use http::{
+    header::{HeaderValue, CONTENT_TYPE},
+    StatusCode,
+};
 use log::*;
 use tower_web::response::{Context, Response, Serializer};
 
@@ -20,7 +22,12 @@ impl<T: weft::WeftRenderable> Response for WeftResponse<T> {
         context: &Context<S>,
     ) -> Result<http::Response<Self::Body>, tower_web::Error> {
         match weft::render_to_string(self.0) {
-            Ok(content) => content.into_http(context),
+            Ok(content) => {
+                let mut resp = content.into_http(context)?;
+                resp.headers_mut()
+                    .insert(CONTENT_TYPE, HeaderValue::from_static("text/html"));
+                Ok(resp)
+            }
             Err(err) => {
                 error!("Error rendering template: {:?}", err);
                 Err(tower_web::Error::builder()

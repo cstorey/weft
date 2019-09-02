@@ -2,6 +2,7 @@ use std::thread;
 
 use futures::future::Future;
 use log::*;
+use reqwest::header::CONTENT_TYPE;
 use tokio::net::TcpListener;
 use tower_web::*;
 
@@ -32,19 +33,16 @@ fn should_render_from_handler() {
     let addr = "127.0.0.1:0".parse().expect("Invalid address");
     let sock = TcpListener::bind(&addr).expect("bind");
     let addr = sock.local_addr().expect("get local address");
-    let srv = ServiceBuilder::new().resource(CanaryApp);
-
     let (p, c) = futures::sync::oneshot::channel();
 
-    let srvf = srv.serve(sock.incoming());
-    let _: &dyn Future<Item = (), Error = ()> = &srvf;
-    let cancelf = c.map_err(|cancelled| println!("Cancelled: {:?}", cancelled));
-    let _: &dyn Future<Item = (), Error = ()> = &cancelf;
-    let both = srvf.select(cancelf).map(|((), _)| ()).map_err(|((), _)| ());
-    let _: &dyn Future<Item = (), Error = ()> = &both;
+    let srv = ServiceBuilder::new().resource(CanaryApp);
 
     let t = thread::spawn(move || {
-        tokio::run(both);
+        let srvf = srv
+            .serve(sock.incoming())
+            .select(c.map_err(|cancelled| warn!("Cancelled: {:?}", cancelled)))
+            .then(|_| Ok(()));
+        tokio::run(srvf);
     });
 
     info!("Spawned thread: {:?}", t);
@@ -68,4 +66,51 @@ fn should_render_from_handler() {
 
     p.send(()).expect("Send");
     t.join().expect("thread join");
+}
+
+#[test]
+fn should_produce_text_html() {
+    env_logger::try_init().unwrap_or_default();
+
+    let addr = "127.0.0.1:0".parse().expect("Invalid address");
+    let sock = TcpListener::bind(&addr).expect("bind");
+    let addr = sock.local_addr().expect("get local address");
+    let (p, c) = futures::sync::oneshot::channel();
+
+    let srv = ServiceBuilder::new().resource(CanaryApp);
+
+    let t = thread::spawn(move || {
+        let srvf = srv
+            .serve(sock.incoming())
+            .select(c.map_err(|cancelled| warn!("Cancelled: {:?}", cancelled)))
+            .then(|_| Ok(()));
+        tokio::run(srvf);
+    });
+
+    info!("Spawned thread: {:?}", t);
+
+    let url = format!("http://{}/", addr);
+    info!("Querying: {}", url);
+
+    let header = reqwest::get(&url)
+        .expect("Fetch URL")
+        .headers()
+        .get(CONTENT_TYPE)
+        .expect("Has content-type")
+        .clone();
+    let header_value = header.to_str().expect("header to_str");
+    let expected = "text/html";
+    info!("Verifying header value");
+    assert!(
+        header_value.contains(expected),
+        "String {:?} contains {:?}",
+        header_value,
+        expected
+    );
+
+    info!("Sending cancel");
+    p.send(()).expect("Send");
+    info!("Joining thread");
+    t.join().expect("thread join");
+    info!("Done");
 }

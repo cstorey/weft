@@ -5,7 +5,6 @@ extern crate weft_derive;
 use regex::*;
 use std::fmt;
 use std::io;
-use std::iter;
 use weft::*;
 
 #[test]
@@ -14,7 +13,7 @@ fn should_render_trivial_example() {
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl WeftRenderable for TrivialExample {
         fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
-            target.start_element_attrs("p".into(), iter::empty())?;
+            target.start_element_attrs("p".into(), &[])?;
             target.text("Hello".into())?;
             target.end_element("p".into())?;
             Ok(())
@@ -37,10 +36,7 @@ fn should_render_attrs() {
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl WeftRenderable for TrivialExample {
         fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
-            target.start_element_attrs(
-                "p".into(),
-                iter::once(&AttrPair::new("class", "some-classes")),
-            )?;
+            target.start_element_attrs("p".into(), &[&AttrPair::new("class", "some-classes")])?;
             target.text("Hello".into())?;
             target.end_element("p".into())?;
             Ok(())
@@ -105,7 +101,7 @@ fn display_supports_to_string() {
             use weft::prelude::*;
             target.start_element_attrs(
                 "p".into(),
-                std::iter::once(&weft::AttrPair::new("x", self.0.display().to_string())),
+                &[&weft::AttrPair::new("x", self.0.display().to_string())],
             )?;
             Ok(())
         }

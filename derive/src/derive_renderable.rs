@@ -184,15 +184,7 @@ impl Walker {
         attrs: &[Attribute],
         content: TokenStream2,
     ) -> Result<TokenStream2, Error> {
-        let attrs_quotes = attrs
-            .iter()
-            .map(|at| at)
-            .map(|at| quote!(::std::iter::once(&#at)));
-
-        let attrs_q = attrs_quotes.fold(
-            quote!(::std::iter::empty()),
-            |prefix, it| quote!(#prefix.chain(#it)),
-        );
+        let attrs_q = quote!(&[#(&#attrs),*]);
         let mut statements = TokenStream2::new();
         statements.extend(quote!(
             __weft_target.start_element_attrs(#localname.into(), #attrs_q)?;

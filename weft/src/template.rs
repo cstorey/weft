@@ -35,11 +35,7 @@ pub struct AttrPair {
 ///
 pub trait RenderTarget {
     /// Open an element with the given name and attributes.
-    fn start_element_attrs<'a, I: IntoIterator<Item = &'a AttrPair>>(
-        &mut self,
-        name: QName,
-        attrs: I,
-    ) -> Result<(), io::Error>;
+    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error>;
     /// Write plain text content.
     fn text(&mut self, content: &str) -> Result<(), io::Error>;
     /// Close an element.
@@ -65,11 +61,7 @@ struct Html5Wrapper<R> {
 struct Html5Ser<'a, T: 'a>(&'a mut T);
 
 impl<'a, T: 'a + html5ever::serialize::Serializer> RenderTarget for Html5Ser<'a, T> {
-    fn start_element_attrs<'attr, I: IntoIterator<Item = &'attr AttrPair>>(
-        &mut self,
-        name: QName,
-        attrs: I,
-    ) -> Result<(), io::Error> {
+    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
         self.0.start_elem(
             name.as_qual_name(),
             attrs.into_iter().map(|a| (&a.name, &*a.value)),

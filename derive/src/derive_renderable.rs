@@ -3,6 +3,7 @@ use failure::Error;
 use kuchiki::iter::Siblings;
 use kuchiki::{ElementData, ExpandedName, NodeData, NodeRef};
 use proc_macro2::TokenStream as TokenStream2;
+use quote::TokenStreamExt;
 use syn;
 
 #[derive(Default, Debug)]
@@ -34,7 +35,7 @@ fn render_to_fn(nodes: NodeRef) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
     let impl_body = walker.children(nodes.children())?;
     Ok(quote! {
-            fn render_to<__weft_R: ::weft::RenderTarget>(&self, __weft_target: &mut __weft_R) -> Result<(), ::std::io::Error> {
+            fn render_to(&self, __weft_target: &mut ::weft::RenderTarget) -> Result<(), ::std::io::Error> {
                 use ::weft::prelude::*;
                 #impl_body;
                 Ok(())
@@ -183,15 +184,7 @@ impl Walker {
         attrs: &[Attribute],
         content: TokenStream2,
     ) -> Result<TokenStream2, Error> {
-        let attrs_quotes = attrs.iter().map(|at| at).map(|at| {
-            let attr = at.to_tokens();
-            quote!(::std::iter::once(&#attr))
-        });
-
-        let attrs_q = attrs_quotes.fold(
-            quote!(::std::iter::empty()),
-            |prefix, it| quote!(#prefix.chain(#it)),
-        );
+        let attrs_q = quote!(&[#(&#attrs),*]);
         let mut statements = TokenStream2::new();
         statements.extend(quote!(
             __weft_target.start_element_attrs(#localname.into(), #attrs_q)?;
@@ -246,8 +239,9 @@ impl Attribute {
 
         Ok(Attribute { name, value })
     }
-
-    fn to_tokens(&self) -> TokenStream2 {
+}
+impl quote::ToTokens for Attribute {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         let key_name: String = self.name.to_string();
 
         let str_iter_q = self
@@ -262,7 +256,7 @@ impl Attribute {
             );
 
         let value = quote!(#str_iter_q.collect::<String>());
-        quote!(::weft::AttrPair::new(#key_name, #value))
+        tokens.append_all(quote!(::weft::AttrPair::new(#key_name, #value)))
     }
 }
 

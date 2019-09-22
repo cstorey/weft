@@ -3,6 +3,7 @@ use failure::Error;
 use kuchiki::iter::Siblings;
 use kuchiki::{ElementData, ExpandedName, NodeData, NodeRef};
 use proc_macro2::TokenStream as TokenStream2;
+use quote::TokenStreamExt;
 use syn;
 
 #[derive(Default, Debug)]
@@ -183,10 +184,10 @@ impl Walker {
         attrs: &[Attribute],
         content: TokenStream2,
     ) -> Result<TokenStream2, Error> {
-        let attrs_quotes = attrs.iter().map(|at| at).map(|at| {
-            let attr = at.to_tokens();
-            quote!(::std::iter::once(&#attr))
-        });
+        let attrs_quotes = attrs
+            .iter()
+            .map(|at| at)
+            .map(|at| quote!(::std::iter::once(&#at)));
 
         let attrs_q = attrs_quotes.fold(
             quote!(::std::iter::empty()),
@@ -246,8 +247,9 @@ impl Attribute {
 
         Ok(Attribute { name, value })
     }
-
-    fn to_tokens(&self) -> TokenStream2 {
+}
+impl quote::ToTokens for Attribute {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         let key_name: String = self.name.to_string();
 
         let str_iter_q = self
@@ -262,7 +264,7 @@ impl Attribute {
             );
 
         let value = quote!(#str_iter_q.collect::<String>());
-        quote!(::weft::AttrPair::new(#key_name, #value))
+        tokens.append_all(quote!(::weft::AttrPair::new(#key_name, #value)))
     }
 }
 

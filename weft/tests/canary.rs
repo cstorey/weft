@@ -335,3 +335,27 @@ fn should_import_displayable() {
         expected
     )
 }
+
+#[derive(WeftRenderable)]
+#[template(path = "tests/content.html")]
+struct WithBoxedContent {
+    child: Box<dyn weft::WeftRenderable>,
+}
+
+#[test]
+fn should_support_boxed_content() {
+    let view = WithBoxedContent {
+        child: Box::new("Hello".to_string()),
+    };
+
+    let s = weft::render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "<p>Hello</p>";
+    assert!(
+        s.contains(expected),
+        "String {:?} contains {:?}",
+        s,
+        expected
+    )
+}

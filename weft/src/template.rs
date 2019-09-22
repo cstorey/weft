@@ -46,11 +46,11 @@ pub trait RenderTarget {
 /// but can be implemented manually for special cases.
 pub trait WeftRenderable {
     /// Outputs a representation of this object to the target.
-    fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error>;
+    fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error>;
 }
 
 impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
-    fn render_to<T: RenderTarget>(&self, target: &mut T) -> Result<(), io::Error> {
+    fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
         (**self).render_to(target)
     }
 }

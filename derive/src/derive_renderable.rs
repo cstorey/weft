@@ -269,7 +269,7 @@ impl quote::ToTokens for IteratorDecl {
 }
 
 impl syn::parse::Parse for IteratorDecl {
-    fn parse(buf: &syn::parse::ParseBuffer) -> Result<Self, syn::parse::Error> {
+    fn parse(buf: &syn::parse::ParseBuffer<'_>) -> Result<Self, syn::parse::Error> {
         let pattern = buf.parse()?;
         let in_ = buf.parse()?;
         let expr = buf.parse()?;

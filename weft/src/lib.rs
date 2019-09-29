@@ -23,7 +23,6 @@ This module provides runtime support for `weft` templates.
 
 #[macro_use]
 extern crate html5ever;
-extern crate weft_derive;
 
 mod extensions;
 mod template;

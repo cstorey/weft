@@ -1,7 +1,6 @@
 use actix_web::dev::Service;
 use actix_web::{test, web, App};
 
-extern crate weft;
 use weft_actix::WeftResponse;
 use weft_derive::WeftRenderable;
 

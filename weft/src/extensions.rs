@@ -2,16 +2,16 @@ use crate::template::{RenderTarget, WeftRenderable};
 use std::{fmt, io};
 
 /// A helper struct for the `Displayable` trait.
-pub struct Displayer<'a, D: 'a>(&'a D);
+pub struct Displayer<'a, D>(&'a D);
 
 /// A mechanism to render a value that implements `fmt::Display` in templates.
 pub trait Displayable: Sized {
     /// Extension method for types that implement fmt::Display
-    fn display(&self) -> Displayer<Self>;
+    fn display(&self) -> Displayer<'_, Self>;
 }
 
 impl<D: fmt::Display> Displayable for D {
-    fn display(&self) -> Displayer<D> {
+    fn display(&self) -> Displayer<'_, D> {
         Displayer(self)
     }
 }

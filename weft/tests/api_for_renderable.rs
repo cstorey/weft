@@ -1,6 +1,4 @@
-extern crate regex;
-extern crate weft;
-extern crate weft_derive;
+use weft;
 
 use regex::*;
 use std::fmt;

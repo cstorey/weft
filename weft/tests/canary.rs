@@ -1,5 +1,4 @@
-extern crate regex;
-extern crate weft;
+use weft;
 #[macro_use]
 extern crate weft_derive;
 

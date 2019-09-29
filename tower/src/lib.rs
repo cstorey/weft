@@ -19,7 +19,7 @@ impl<T: weft::WeftRenderable> Response for WeftResponse<T> {
 
     fn into_http<S: Serializer>(
         self,
-        context: &Context<S>,
+        context: &Context<'_, S>,
     ) -> Result<http::Response<Self::Body>, tower_web::Error> {
         match weft::render_to_string(self.0) {
             Ok(content) => {

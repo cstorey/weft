@@ -1,4 +1,5 @@
 use failure::Error;
+use log::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Segment {
@@ -50,6 +51,8 @@ pub fn parse_inline(input: &str) -> Result<Substitutable, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use syn::parse_quote;
+
     #[test]
     fn test_trivial_expr() {
         let segments = parse_inline("{{ foo }}").expect("parse_inline");
@@ -91,5 +94,4 @@ mod tests {
             ]
         )
     }
-
 }

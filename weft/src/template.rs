@@ -1,5 +1,4 @@
-use html5ever;
-use html5ever::QualName;
+use html5ever::{self,QualName,ns,namespace_url};
 use std::io;
 
 /// An internal representation of a qualified name, such as a tag or attribute.
@@ -58,7 +57,7 @@ impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
 struct Html5Wrapper<R> {
     inner: R,
 }
-struct Html5Ser<'a, T: 'a>(&'a mut T);
+struct Html5Ser<'a, T>(&'a mut T);
 
 impl<'a, T: 'a + html5ever::serialize::Serializer> RenderTarget for Html5Ser<'a, T> {
     fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {

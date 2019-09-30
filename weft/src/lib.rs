@@ -6,9 +6,7 @@ This module provides runtime support for `weft` templates.
 ## Example:
 
 ```rust
-   #[macro_use]
-   extern crate weft_derive;
-   extern crate weft;
+   use weft_derive::WeftRenderable;
    #[derive(WeftRenderable)]
    #[template(source = "<p>Hello {{ self.0 }}!</p>")]
    struct Greeting(String);
@@ -20,10 +18,6 @@ This module provides runtime support for `weft` templates.
     }
 ```
 */
-
-#[macro_use]
-extern crate html5ever;
-extern crate weft_derive;
 
 mod extensions;
 mod template;

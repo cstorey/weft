@@ -4,19 +4,12 @@ This module provides compiler support for creating `weft` templates. See the `we
 */
 
 extern crate proc_macro;
-extern crate proc_macro2;
-#[macro_use]
-extern crate quote;
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
-#[macro_use]
-extern crate syn;
-extern crate html5ever;
-extern crate kuchiki;
-extern crate regex;
+use proc_macro2;
+use env_logger;
+use failure::bail;
+use kuchiki;
+use log::*;
+use syn::Token;
 
 mod derive_renderable;
 mod inline_parse;
@@ -107,7 +100,7 @@ enum TemplateArg {
 }
 
 impl syn::parse::Parse for TemplateArg {
-    fn parse(buf: &syn::parse::ParseBuffer) -> Result<Self, syn::parse::Error> {
+    fn parse(buf: &syn::parse::ParseBuffer<'_>) -> Result<Self, syn::parse::Error> {
         let id: syn::Ident = buf.parse()?;
         let _eq: Token![=] = buf.parse()?;
         if id == "path" {
@@ -220,6 +213,9 @@ fn root_dir() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use quote::quote;
+    use syn::parse_quote;
+
     #[test]
     fn can_parse_with_path() {
         let deriv = parse_quote!(

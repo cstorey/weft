@@ -2,9 +2,12 @@ use crate::inline_parse::{parse_inline, Segment, Substitutable};
 use failure::Error;
 use kuchiki::iter::Siblings;
 use kuchiki::{ElementData, ExpandedName, NodeData, NodeRef};
+use log::*;
 use proc_macro2::TokenStream as TokenStream2;
+use quote::quote;
 use quote::TokenStreamExt;
 use syn;
+use syn::{parse_quote, Token};
 
 #[derive(Default, Debug)]
 struct Walker;
@@ -269,7 +272,7 @@ impl quote::ToTokens for IteratorDecl {
 }
 
 impl syn::parse::Parse for IteratorDecl {
-    fn parse(buf: &syn::parse::ParseBuffer) -> Result<Self, syn::parse::Error> {
+    fn parse(buf: &syn::parse::ParseBuffer<'_>) -> Result<Self, syn::parse::Error> {
         let pattern = buf.parse()?;
         let in_ = buf.parse()?;
         let expr = buf.parse()?;

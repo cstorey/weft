@@ -1,7 +1,5 @@
-extern crate regex;
-extern crate weft;
-#[macro_use]
-extern crate weft_derive;
+use weft;
+use weft_derive::{WeftRenderable};
 
 use regex::*;
 

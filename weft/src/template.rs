@@ -1,5 +1,4 @@
-use html5ever;
-use html5ever::QualName;
+use html5ever::{self,QualName,ns,namespace_url};
 use std::io;
 
 /// An internal representation of a qualified name, such as a tag or attribute.

@@ -14,7 +14,7 @@ documentation = "https://docs.rs/weft-tower"
 tower-web = "0.3.7"
 weft = { path = "../weft" }
 weft_derive = { path = "../derive" }
-http = "0.1.18"
+http = "0.2.0"
 log = "0.4.8"
 
 [dev-dependencies]

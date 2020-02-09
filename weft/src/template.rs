@@ -1,4 +1,3 @@
-use html5ever::{self,QualName,ns,namespace_url};
 use std::io;
 
 /// An internal representation of a qualified name, such as a tag or attribute.
@@ -18,15 +17,10 @@ impl<'a> From<&'a str> for QName {
     }
 }
 
-impl QName {
-    fn as_qual_name(&self) -> html5ever::QualName {
-        html5ever::QualName::new(None, ns!(html), html5ever::LocalName::from(self.0.clone()))
-    }
-}
-
 /// An attribute name and value pair.
+#[derive(Debug)]
 pub struct AttrPair {
-    name: QualName,
+    name: String,
     value: String,
 }
 
@@ -54,36 +48,25 @@ impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
     }
 }
 
-struct Html5Wrapper<R> {
-    inner: R,
-}
-struct Html5Ser<'a, T>(&'a mut T);
+struct Html5Ser<T>(T);
 
-impl<'a, T: 'a + html5ever::serialize::Serializer> RenderTarget for Html5Ser<'a, T> {
+impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
     fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
-        self.0.start_elem(
-            name.as_qual_name(),
-            attrs.into_iter().map(|a| (&a.name, &*a.value)),
-        )
+        write!(self.0, "<{}", name.0)?;
+        for attr in attrs {
+            // TODO: Escaping!
+            write!(self.0, " {}=\"{}\"", attr.name, attr.value)?;
+        }
+        write!(self.0, ">")?;
+        Ok(())
     }
     fn text(&mut self, content: &str) -> Result<(), io::Error> {
-        self.0.write_text(content)
+        // TODO: Escaping!
+        write!(self.0, "{}", content)?;
+        Ok(())
     }
     fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
-        self.0.end_elem(name.as_qual_name())
-    }
-}
-
-impl<R: WeftRenderable> html5ever::serialize::Serialize for Html5Wrapper<R> {
-    fn serialize<S>(
-        &self,
-        serializer: &mut S,
-        _: html5ever::serialize::TraversalScope,
-    ) -> Result<(), io::Error>
-    where
-        S: html5ever::serialize::Serializer,
-    {
-        self.inner.render_to(&mut Html5Ser(serializer))?;
+        write!(self.0, "</{}>", name.0)?;
         Ok(())
     }
 }
@@ -91,9 +74,8 @@ impl<R: WeftRenderable> html5ever::serialize::Serialize for Html5Wrapper<R> {
 impl AttrPair {
     /// Builds an attribute from a local-name and a value convertible to a string.
     pub fn new<S: ToString>(local_name: &str, value: S) -> Self {
-        let qual = QualName::new(None, ns!(), html5ever::LocalName::from(local_name));
         AttrPair {
-            name: qual,
+            name: local_name.into(),
             value: value.to_string(),
         }
     }
@@ -101,8 +83,8 @@ impl AttrPair {
 
 /// Renders the template in `widget` to the writer `out`.
 pub fn render_writer<R: WeftRenderable, W: io::Write>(widget: R, out: W) -> Result<(), io::Error> {
-    let nodes = Html5Wrapper { inner: widget };
-    html5ever::serialize::serialize(out, &nodes, Default::default())?;
+    let mut ser = Html5Ser(out);
+    widget.render_to(&mut ser)?;
     Ok(())
 }
 

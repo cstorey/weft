@@ -357,3 +357,22 @@ fn should_support_boxed_content() {
         expected
     )
 }
+
+#[test]
+fn should_correctly_escape_content_in_text() {
+    let view = WithContent {
+        child: "<script src=\"xss.js\"/>".into(),
+    };
+
+    let s = weft::render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let unwanted = "<script";
+    assert!(
+        !s.contains(unwanted),
+        "String {:?} does not contain {:?}",
+        s,
+        unwanted
+    )
+
+}

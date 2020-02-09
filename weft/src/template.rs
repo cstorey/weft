@@ -1,5 +1,7 @@
 use std::io;
 
+use v_htmlescape::escape;
+
 /// An internal representation of a qualified name, such as a tag or attribute.
 /// Does not currently support namespaces.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -61,8 +63,7 @@ impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
         Ok(())
     }
     fn text(&mut self, content: &str) -> Result<(), io::Error> {
-        // TODO: Escaping!
-        write!(self.0, "{}", content)?;
+        write!(self.0, "{}", escape(content))?;
         Ok(())
     }
     fn end_element(&mut self, name: QName) -> Result<(), io::Error> {

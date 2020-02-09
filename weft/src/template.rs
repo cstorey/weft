@@ -57,7 +57,7 @@ impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
         write!(self.0, "<{}", name.0)?;
         for attr in attrs {
             // TODO: Escaping!
-            write!(self.0, " {}=\"{}\"", attr.name, attr.value)?;
+            write!(self.0, " {}=\"{}\"", attr.name, escape(&attr.value))?;
         }
         write!(self.0, ">")?;
         Ok(())

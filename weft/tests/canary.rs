@@ -357,3 +357,39 @@ fn should_support_boxed_content() {
         expected
     )
 }
+
+#[test]
+fn should_correctly_escape_content_in_text() {
+    let view = WithContent {
+        child: "<script src=\"xss.js\"/>".into(),
+    };
+
+    let s = weft::render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let unwanted = "<script";
+    assert!(
+        !s.contains(unwanted),
+        "String {:?} does not contain {:?}",
+        s,
+        unwanted
+    )
+}
+
+#[test]
+fn should_correctly_escape_content_in_attrs() {
+    #[derive(WeftRenderable)]
+    #[template(source = "<p class=\"{{self.0}}\"/>")]
+    struct Para(String);
+
+    let s = weft::render_to_string(Para("\"><script src=\"xss.js\"/>".into())).expect("render_to_string");
+    println!("{}", s);
+
+    let unwanted = "class=\"\"><script ";
+    assert!(
+        !s.contains(unwanted),
+        "String {:?} should not contain {:?}",
+        s,
+        unwanted
+    );
+}

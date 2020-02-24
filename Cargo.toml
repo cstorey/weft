@@ -1,2 +1,2 @@
 [workspace]
-members = [ "weft", "derive", "actix", "tower" ]
+members = [ "weft", "derive", "actix" ]

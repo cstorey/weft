@@ -38,7 +38,7 @@ fn render_to_fn(nodes: NodeRef) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
     let impl_body = walker.children(nodes.children())?;
     Ok(quote! {
-            fn render_to(&self, __weft_target: &mut ::weft::RenderTarget) -> Result<(), ::std::io::Error> {
+            fn render_to(&self, mut __weft_target: impl ::weft::RenderTarget) -> Result<(), ::std::io::Error> {
                 use ::weft::prelude::*;
                 #impl_body;
                 Ok(())
@@ -137,9 +137,9 @@ impl Walker {
 
         let directive = Directives::parse_from_attrs(&data.attributes.borrow())?;
         let res = if let Some(repl) = directive.replacement {
-            quote!(#repl.render_to(__weft_target)?;)
+            quote!(#repl.render_to(&mut __weft_target)?;)
         } else if let Some(content) = directive.content {
-            let content = quote!(#content.render_to(__weft_target)?;);
+            let content = quote!(#content.render_to(&mut __weft_target)?;);
             self.emit_element(&localname, &*directive.plain_attrs, content)?
         } else {
             let content = self.children(children)?;
@@ -173,7 +173,7 @@ impl Walker {
                     result.extend(chunk);
                 }
                 Segment::Expr(expr) => {
-                    let chunk = quote!(#expr.render_to(__weft_target)?;);
+                    let chunk = quote!(#expr.render_to(&mut __weft_target)?;);
                     result.extend(chunk);
                 }
             }

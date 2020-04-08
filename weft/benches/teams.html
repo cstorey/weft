@@ -1,0 +1,16 @@
+<html>
+  <head>
+    <title>{{ self.year.display() }}</title>
+  </head>
+  <body>
+    <h1>CSL {{ self.year.display() }}</h1>
+    <ul>
+      <li
+        weft-for="(i, team) in self.teams.iter().enumerate()"
+        class='{{ if i == 0 { "champion" } else { "" } }}'
+      >
+        <b>{{ team.name }}</b>: {{ team.score.display() }}
+      </li>
+    </ul>
+  </body>
+</html>

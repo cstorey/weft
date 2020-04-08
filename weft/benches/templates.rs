@@ -108,7 +108,10 @@ fn big_table_reuse_buffer(b: &mut test::Bencher, size: usize) {
     weft::render_writer(&tmpl, &mut buf).expect("render");
     b.bytes = buf.len().try_into().unwrap();
 
-    let thunk = || { buf.clear(); weft::render_writer(&tmpl, &mut buf)};
+    let thunk = || {
+        buf.clear();
+        weft::render_writer(&tmpl, &mut buf)
+    };
 
     b.iter(thunk);
 }

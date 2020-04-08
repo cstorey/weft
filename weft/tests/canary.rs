@@ -1,5 +1,5 @@
 use weft;
-use weft_derive::{WeftRenderable};
+use weft_derive::WeftRenderable;
 
 use regex::*;
 
@@ -382,7 +382,8 @@ fn should_correctly_escape_content_in_attrs() {
     #[template(source = "<p class=\"{{self.0}}\"/>")]
     struct Para(String);
 
-    let s = weft::render_to_string(Para("\"><script src=\"xss.js\"/>".into())).expect("render_to_string");
+    let s = weft::render_to_string(Para("\"><script src=\"xss.js\"/>".into()))
+        .expect("render_to_string");
     println!("{}", s);
 
     let unwanted = "class=\"\"><script ";

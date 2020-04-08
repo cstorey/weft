@@ -4,11 +4,11 @@ This module provides compiler support for creating `weft` templates. See the `we
 */
 
 extern crate proc_macro;
-use proc_macro2;
 use env_logger;
 use failure::bail;
 use kuchiki;
 use log::*;
+use proc_macro2;
 use syn::Token;
 
 mod derive_renderable;

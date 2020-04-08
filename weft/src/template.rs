@@ -44,9 +44,31 @@ pub trait WeftRenderable {
     fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error>;
 }
 
+/// This is exactly like the `WeftRenderable` trait, but for cases where
+/// we need a trait object. Eg: for a `Vec<Box<dyn ErasedRenderable>>`.
+pub trait ErasedRenderable {
+    /// Outputs a representation of this object to the target.
+    fn erased_render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error>;
+}
+
 impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
     fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
         (**self).render_to(target)
+    }
+}
+
+impl<T> ErasedRenderable for T
+where
+    T: WeftRenderable,
+{
+    fn erased_render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
+        self.render_to(target)
+    }
+}
+
+impl WeftRenderable for dyn ErasedRenderable {
+    fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
+        self.erased_render_to(target)
     }
 }
 

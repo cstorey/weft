@@ -337,7 +337,7 @@ fn should_import_displayable() {
 #[derive(WeftRenderable)]
 #[template(path = "tests/content.html")]
 struct WithBoxedContent {
-    child: Box<dyn weft::WeftRenderable>,
+    child: Box<dyn weft::ErasedRenderable>,
 }
 
 #[test]

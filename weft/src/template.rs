@@ -41,7 +41,7 @@ pub trait RenderTarget {
 /// but can be implemented manually for special cases.
 pub trait WeftRenderable {
     /// Outputs a representation of this object to the target.
-    fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error>;
+    fn render_to(&self, target: impl RenderTarget) -> Result<(), io::Error>;
 }
 
 /// This is exactly like the `WeftRenderable` trait, but for cases where
@@ -51,8 +51,32 @@ pub trait ErasedRenderable {
     fn erased_render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error>;
 }
 
+impl<'a> RenderTarget for &'a mut dyn RenderTarget {
+    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
+        (**self).start_element_attrs(name, attrs)
+    }
+    fn text(&mut self, content: &str) -> Result<(), io::Error> {
+        (**self).text(content)
+    }
+    fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
+        (**self).end_element(name)
+    }
+}
+
+impl<'a, T: RenderTarget> RenderTarget for &'a mut T {
+    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
+        (**self).start_element_attrs(name, attrs)
+    }
+    fn text(&mut self, content: &str) -> Result<(), io::Error> {
+        (**self).text(content)
+    }
+    fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
+        (**self).end_element(name)
+    }
+}
+
 impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
-    fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
+    fn render_to(&self, target: impl RenderTarget) -> Result<(), io::Error> {
         (**self).render_to(target)
     }
 }
@@ -67,8 +91,8 @@ where
 }
 
 impl WeftRenderable for dyn ErasedRenderable {
-    fn render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
-        self.erased_render_to(target)
+    fn render_to(&self, mut target: impl RenderTarget) -> Result<(), io::Error> {
+        self.erased_render_to(&mut target)
     }
 }
 
@@ -106,8 +130,8 @@ impl AttrPair {
 
 /// Renders the template in `widget` to the writer `out`.
 pub fn render_writer<R: WeftRenderable, W: io::Write>(widget: R, out: W) -> Result<(), io::Error> {
-    let mut ser = Html5Ser(out);
-    widget.render_to(&mut ser)?;
+    let ser = Html5Ser(out);
+    widget.render_to(ser)?;
     Ok(())
 }
 

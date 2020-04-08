@@ -100,12 +100,17 @@ struct Html5Ser<T>(T);
 
 impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
     fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
-        write!(self.0, "<{}", name.0)?;
+        self.0.write_all(b"<")?;
+        self.0.write_all(name.0.as_bytes())?;
+
         for attr in attrs {
             // TODO: Escaping!
-            write!(self.0, " {}=\"{}\"", attr.name, escape(&attr.value))?;
+            self.0.write_all(b" ")?;
+            self.0.write_all(attr.name.as_bytes())?;
+            self.0.write_all(b"=")?;
+            write!(self.0, "\"{}\"", escape(&attr.value))?;
         }
-        write!(self.0, ">")?;
+        self.0.write_all(b">")?;
         Ok(())
     }
     fn text(&mut self, content: &str) -> Result<(), io::Error> {
@@ -113,7 +118,9 @@ impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
         Ok(())
     }
     fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
-        write!(self.0, "</{}>", name.0)?;
+        self.0.write_all(b"</")?;
+        self.0.write_all(name.0.as_bytes())?;
+        self.0.write_all(b">")?;
         Ok(())
     }
 }

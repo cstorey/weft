@@ -41,7 +41,7 @@ pub trait RenderTarget {
 /// but can be implemented manually for special cases.
 pub trait WeftRenderable {
     /// Outputs a representation of this object to the target.
-    fn render_to(&self, target: impl RenderTarget) -> Result<(), io::Error>;
+    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error>;
 }
 
 /// This is exactly like the `WeftRenderable` trait, but for cases where
@@ -76,7 +76,7 @@ impl<'a, T: RenderTarget> RenderTarget for &'a mut T {
 }
 
 impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
-    fn render_to(&self, target: impl RenderTarget) -> Result<(), io::Error> {
+    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
         (**self).render_to(target)
     }
 }
@@ -85,14 +85,14 @@ impl<T> ErasedRenderable for T
 where
     T: WeftRenderable,
 {
-    fn erased_render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
-        self.render_to(target)
+    fn erased_render_to(&self, mut target: &mut dyn RenderTarget) -> Result<(), io::Error> {
+        self.render_to(&mut target)
     }
 }
 
 impl WeftRenderable for dyn ErasedRenderable {
-    fn render_to(&self, mut target: impl RenderTarget) -> Result<(), io::Error> {
-        self.erased_render_to(&mut target)
+    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+        self.erased_render_to(target)
     }
 }
 
@@ -137,8 +137,8 @@ impl AttrPair {
 
 /// Renders the template in `widget` to the writer `out`.
 pub fn render_writer<R: WeftRenderable, W: io::Write>(widget: R, out: W) -> Result<(), io::Error> {
-    let ser = Html5Ser(out);
-    widget.render_to(ser)?;
+    let mut ser = Html5Ser(out);
+    widget.render_to(&mut ser)?;
     Ok(())
 }
 

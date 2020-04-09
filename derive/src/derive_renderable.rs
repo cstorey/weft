@@ -38,7 +38,7 @@ fn render_to_fn(nodes: NodeRef) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
     let impl_body = walker.children(nodes.children())?;
     Ok(quote! {
-            fn render_to(&self, mut __weft_target: impl ::weft::RenderTarget) -> Result<(), ::std::io::Error> {
+            fn render_to(&self, mut __weft_target: &mut impl ::weft::RenderTarget) -> Result<(), ::std::io::Error> {
                 use ::weft::prelude::*;
                 #impl_body;
                 Ok(())

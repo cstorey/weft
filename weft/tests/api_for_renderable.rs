@@ -1,5 +1,3 @@
-use weft;
-
 use regex::*;
 use std::fmt;
 use std::io;
@@ -12,7 +10,7 @@ fn should_render_trivial_example() {
     impl WeftRenderable for TrivialExample {
         fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
             target.start_element_attrs("p".into(), &[])?;
-            target.text("Hello".into())?;
+            target.text("Hello")?;
             target.end_element("p".into())?;
             Ok(())
         }
@@ -35,7 +33,7 @@ fn should_render_attrs() {
     impl WeftRenderable for TrivialExample {
         fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
             target.start_element_attrs("p".into(), &[&AttrPair::new("class", "some-classes")])?;
-            target.text("Hello".into())?;
+            target.text("Hello")?;
             target.end_element("p".into())?;
             Ok(())
         }

@@ -1,4 +1,4 @@
-use failure::Error;
+use anyhow::Error;
 use log::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,21 +27,20 @@ pub fn parse_inline(input: &str) -> Result<Substitutable, Error> {
         trace!("Got: {:?}", it);
 
         let previous = &input[last_match..it.start()];
-        if previous.len() > 0 {
+        if !previous.is_empty() {
             children.push(Segment::Literal(previous.into()));
         }
 
         let m = it.as_str();
         let range = 2..(m.len() - 2);
-        let expr: syn::Expr =
-            syn::parse_str(&m[range]).map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+        let expr: syn::Expr = syn::parse_str(&m[range])?;
 
         children.push(Segment::Expr(expr));
 
         last_match = it.end();
     }
     let remainder = &input[last_match..];
-    if remainder.len() > 0 {
+    if !remainder.is_empty() {
         children.push(Segment::Literal(remainder.into()));
     }
 

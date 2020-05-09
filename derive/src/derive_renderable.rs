@@ -1,12 +1,11 @@
 use crate::inline_parse::{parse_inline, Segment, Substitutable};
-use failure::Error;
+use anyhow::Error;
 use kuchiki::iter::Siblings;
 use kuchiki::{ElementData, ExpandedName, NodeData, NodeRef};
 use log::*;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use quote::TokenStreamExt;
-use syn;
 use syn::{parse_quote, Token};
 
 #[derive(Default, Debug)]
@@ -208,23 +207,19 @@ impl Directives {
         for (name, value) in attrs.map.iter() {
             match &*name.local {
                 "weft-replace" => {
-                    let replacement = syn::parse_str(&value.value)
-                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    let replacement = syn::parse_str(&value.value)?;
                     it.replacement = Some(replacement)
                 }
                 "weft-content" => {
-                    let content = syn::parse_str(&value.value)
-                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    let content = syn::parse_str(&value.value)?;
                     it.content = Some(content)
                 }
                 "weft-if" => {
-                    let test = syn::parse_str(&value.value)
-                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    let test = syn::parse_str(&value.value)?;
                     it.conditional = Some(test)
                 }
                 "weft-for" => {
-                    let iterator = syn::parse_str(&value.value)
-                        .map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+                    let iterator = syn::parse_str(&value.value)?;
                     it.iterator = Some(iterator)
                 }
                 _ => it.plain_attrs.push(Attribute::parse(name, value)?),

@@ -1,4 +1,3 @@
-use weft;
 use weft_derive::WeftRenderable;
 
 use regex::*;

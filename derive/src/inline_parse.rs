@@ -1,4 +1,4 @@
-use failure::Error;
+use anyhow::Error;
 use log::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -33,8 +33,7 @@ pub fn parse_inline(input: &str) -> Result<Substitutable, Error> {
 
         let m = it.as_str();
         let range = 2..(m.len() - 2);
-        let expr: syn::Expr =
-            syn::parse_str(&m[range]).map_err(|e| failure::err_msg(format!("{:?}", e)))?;
+        let expr: syn::Expr = syn::parse_str(&m[range])?;
 
         children.push(Segment::Expr(expr));
 

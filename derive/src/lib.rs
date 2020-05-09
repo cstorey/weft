@@ -6,7 +6,6 @@ This module provides compiler support for creating `weft` templates. See the `we
 */
 
 extern crate proc_macro;
-use failure::bail;
 use log::*;
 use syn::Token;
 
@@ -14,7 +13,7 @@ mod derive_renderable;
 mod inline_parse;
 use crate::derive_renderable::*;
 
-use failure::{Error, ResultExt};
+use anyhow::{anyhow, bail, Context, Error};
 use html5ever::tendril::TendrilSink;
 use kuchiki::NodeRef;
 use proc_macro::TokenStream;
@@ -77,7 +76,7 @@ fn parse_path(path: &Path) -> Result<NodeRef, Error> {
 
     let root = parser
         .from_file(&path)
-        .with_context(|_| format!("Parsing template from path {:?}", &path))?;
+        .with_context(|| format!("Parsing template from path {:?}", &path))?;
 
     Ok(root)
 }
@@ -127,7 +126,7 @@ impl TemplateDerivation {
             .inspect(|a| info!("Attribute: {:#?}", a));
         let attr = attrs
             .next()
-            .ok_or_else(|| failure::err_msg("Could not find template attribute"))?;
+            .ok_or_else(|| anyhow!("Could not find template attribute"))?;
 
         if attrs.next().is_some() {
             bail!("Can only process a single #[template(…)] attribute")
@@ -180,7 +179,7 @@ impl TemplateDerivation {
 
         let content = self
             .find_root_from(root)
-            .ok_or_else(|| failure::err_msg("Could not locate root of parsed document?"))?;
+            .ok_or_else(|| anyhow!("Could not locate root of parsed document?"))?;
 
         Ok(content)
     }

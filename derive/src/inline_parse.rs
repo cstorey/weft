@@ -27,7 +27,7 @@ pub fn parse_inline(input: &str) -> Result<Substitutable, Error> {
         trace!("Got: {:?}", it);
 
         let previous = &input[last_match..it.start()];
-        if previous.len() > 0 {
+        if !previous.is_empty() {
             children.push(Segment::Literal(previous.into()));
         }
 
@@ -41,7 +41,7 @@ pub fn parse_inline(input: &str) -> Result<Substitutable, Error> {
         last_match = it.end();
     }
     let remainder = &input[last_match..];
-    if remainder.len() > 0 {
+    if !remainder.is_empty() {
         children.push(Segment::Literal(remainder.into()));
     }
 

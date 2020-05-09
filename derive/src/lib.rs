@@ -1,14 +1,13 @@
+#![allow(clippy::large_enum_variant)]
+
 /*!
 # `weft-derive`.
 This module provides compiler support for creating `weft` templates. See the `weft` module for usage.
 */
 
 extern crate proc_macro;
-use env_logger;
 use failure::bail;
-use kuchiki;
 use log::*;
-use proc_macro2;
 use syn::Token;
 
 mod derive_renderable;
@@ -189,7 +188,7 @@ impl TemplateDerivation {
     fn find_root_from(&self, node: NodeRef) -> Option<NodeRef> {
         if let Ok(mut roots) = node.select(&self.selector) {
             let first = roots.next()?;
-            if let Some(_) = roots.next() {
+            if roots.next().is_some() {
                 warn!("Selector {} returns more than one match", self.selector);
                 return None;
             }

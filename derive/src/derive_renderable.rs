@@ -6,7 +6,6 @@ use log::*;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use quote::TokenStreamExt;
-use syn;
 use syn::{parse_quote, Token};
 
 #[derive(Default, Debug)]

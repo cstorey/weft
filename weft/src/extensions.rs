@@ -1,3 +1,4 @@
+//! Extensions and helpers for use within templates and renderers.
 use crate::template::{RenderTarget, WeftRenderable};
 use std::{fmt, io};
 

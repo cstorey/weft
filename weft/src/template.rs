@@ -96,6 +96,20 @@ impl WeftRenderable for dyn ErasedRenderable {
     }
 }
 
+/// Renderer created from an anonymous function
+pub struct FnRenderer<F>(F);
+
+/// Allows easily creating a renderer from an anonymous function.
+pub fn render_fn<F: Fn(&mut dyn RenderTarget) -> Result<(), io::Error>>(f: F) -> FnRenderer<F> {
+    FnRenderer(f)
+}
+
+impl<F: Fn(&mut dyn RenderTarget) -> Result<(), io::Error>> WeftRenderable for FnRenderer<F> {
+    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+        (self.0)(target)
+    }
+}
+
 struct Html5Ser<T>(T);
 
 impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
@@ -147,4 +161,17 @@ pub fn render_to_string<R: WeftRenderable>(widget: R) -> Result<String, io::Erro
     let mut out = Vec::new();
     render_writer(widget, &mut out)?;
     Ok(String::from_utf8_lossy(&out).into_owned())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn assert_renderable(_: impl WeftRenderable) {}
+
+    #[test]
+    fn from_fn_should_be_renderable() {
+        let child = render_fn(|_| Ok(()));
+        assert_renderable(&child);
+    }
 }

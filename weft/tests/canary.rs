@@ -222,6 +222,23 @@ fn should_support_polymorphism() {
 }
 
 #[test]
+fn should_support_fn_content() {
+    let child = weft::render_fn(|target| target.text("Hello from a function"));
+    let view = WithPolyContent { child };
+
+    let s = weft::render_to_string(view).expect("render_to_string");
+    println!("{}", s);
+
+    let expected = "Hello from a function";
+    assert!(
+        s.contains(expected),
+        "String {:?} should contain {:?}",
+        s,
+        expected
+    )
+}
+
+#[test]
 fn should_support_bare_attributes() {
     // We ostensibly don't differentiate between a bare attribute and
     // and empty value.

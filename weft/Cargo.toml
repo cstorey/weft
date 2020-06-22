@@ -11,7 +11,7 @@ documentation = "https://docs.rs/weft"
 edition = "2018"
 
 [dependencies]
-v_htmlescape = "0.8.0"
+v_htmlescape = "0.9.0"
 
 [dependencies.weft_derive]
 path = "../derive"

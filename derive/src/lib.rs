@@ -81,13 +81,11 @@ fn parse_path(path: &Path) -> Result<NodeRef, Error> {
     Ok(root)
 }
 
-fn parse_source(source: &str) -> Result<NodeRef, Error> {
+fn parse_source(source: &str) -> kuchiki::NodeRef {
     info!("Using inline template");
     let parser = kuchiki::parse_html();
 
-    let root = parser.one(source);
-
-    Ok(root)
+    parser.one(source)
 }
 
 #[derive(Clone, Debug)]
@@ -174,7 +172,7 @@ impl TemplateDerivation {
                 let path = PathBuf::from(root_dir.as_ref()).join(path);
                 parse_path(&path)?
             }
-            TemplateSource::Source(ref source) => parse_source(source)?,
+            TemplateSource::Source(ref source) => parse_source(source),
         };
 
         let content = self

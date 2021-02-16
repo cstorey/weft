@@ -26,67 +26,83 @@ pub struct AttrPair {
     value: String,
 }
 
+/// A convenience type alias, to make implementing [`RenderTarget`] a little easier.
+pub type IoResult<T> = Result<T, io::Error>;
+
 /// Something that we can use to actually render HTML to text.
-///
 pub trait RenderTarget {
+    /// The type used for render the attribute list.
+    type StartElement: StartElementTarget;
     /// Open an element with the given name and attributes.
-    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error>;
+    fn start_element(self, name: QName) -> IoResult<Self::StartElement>;
     /// Write plain text content.
-    fn text(&mut self, content: &str) -> Result<(), io::Error>;
+    fn text(self, content: &str) -> IoResult<()>;
     /// Close an element.
-    fn end_element(&mut self, name: QName) -> Result<(), io::Error>;
+    fn end_element(self, name: QName) -> IoResult<()>;
+}
+
+/// The helper trait used to render the attribute list when opening an element.
+/// Used by [`RenderTarget`]
+pub trait StartElementTarget {
+    /// Emits a single attribute
+    fn attribute(&mut self, pair: &AttrPair) -> IoResult<()>;
+    /// This closes the start of the element.
+    fn close(self) -> IoResult<()>;
 }
 
 /// This is designed to be implemented via the `weft_derive` crate,
 /// but can be implemented manually for special cases.
 pub trait WeftRenderable {
     /// Outputs a representation of this object to the target.
-    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error>;
-}
-
-impl<'a, T: RenderTarget> RenderTarget for &'a mut T {
-    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
-        (**self).start_element_attrs(name, attrs)
-    }
-    fn text(&mut self, content: &str) -> Result<(), io::Error> {
-        (**self).text(content)
-    }
-    fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
-        (**self).end_element(name)
-    }
+    fn render_to<T>(&self, target: &mut T) -> IoResult<()>
+    where
+        for<'t> &'t mut T: RenderTarget;
 }
 
 impl<'a, R: WeftRenderable> WeftRenderable for &'a R {
-    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+    fn render_to<T>(&self, target: &mut T) -> Result<(), io::Error>
+    where
+        for<'t> &'t mut T: RenderTarget,
+    {
         (**self).render_to(target)
     }
 }
 
 struct Html5Ser<T>(T);
+struct Html5Element<'a, T>(&'a mut Html5Ser<T>);
 
-impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
-    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
+impl<'a, T: io::Write> RenderTarget for &'a mut Html5Ser<T> {
+    type StartElement = Html5Element<'a, T>;
+
+    fn start_element(self, name: QName) -> Result<Self::StartElement, io::Error> {
         self.0.write_all(b"<")?;
         self.0.write_all(name.0.as_bytes())?;
 
-        for attr in attrs {
-            // TODO: Escaping!
-            self.0.write_all(b" ")?;
-            self.0.write_all(attr.name.as_bytes())?;
-            self.0.write_all(b"=")?;
-            write!(self.0, "\"{}\"", escape(&attr.value))?;
-        }
-        self.0.write_all(b">")?;
-        Ok(())
+        Ok(Html5Element(self))
     }
-    fn text(&mut self, content: &str) -> Result<(), io::Error> {
+    fn text(self, content: &str) -> Result<(), io::Error> {
         write!(self.0, "{}", escape(content))?;
         Ok(())
     }
-    fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
+    fn end_element(self, name: QName) -> Result<(), io::Error> {
         self.0.write_all(b"</")?;
         self.0.write_all(name.0.as_bytes())?;
         self.0.write_all(b">")?;
+        Ok(())
+    }
+}
+
+impl<'a, T: 'a + io::Write> StartElementTarget for Html5Element<'a, T> {
+    fn attribute(&mut self, attr: &AttrPair) -> Result<(), io::Error> {
+        self.0 .0.write_all(b" ")?;
+        self.0 .0.write_all(attr.name.as_bytes())?;
+        self.0 .0.write_all(b"=")?;
+        write!(self.0 .0, "\"{}\"", escape(&attr.value))?;
+        Ok(())
+    }
+
+    fn close(self) -> Result<(), io::Error> {
+        self.0 .0.write_all(b">")?;
         Ok(())
     }
 }

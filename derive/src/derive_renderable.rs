@@ -37,7 +37,7 @@ fn render_to_fn(nodes: NodeRef) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
     let impl_body = walker.children(nodes.children())?;
     Ok(quote! {
-            fn render_to(&self, mut __weft_target: &mut impl ::weft::RenderTarget) -> Result<(), ::std::io::Error> {
+        fn render_to<T>(&self, mut __weft_target: &mut T) -> ::weft::IoResult<()> where for<'t> &'t mut T: ::weft::RenderTarget {
                 use ::weft::prelude::*;
                 #impl_body;
                 Ok(())
@@ -186,10 +186,17 @@ impl Walker {
         attrs: &[Attribute],
         content: TokenStream2,
     ) -> proc_macro2::TokenStream {
-        let attrs_q = quote!(&[#(&#attrs),*]);
         let mut statements = TokenStream2::new();
         statements.extend(quote!(
-            __weft_target.start_element_attrs(#localname.into(), #attrs_q)?;
+            let mut elt = __weft_target.start_element(#localname.into())?;
+        ));
+        for a in attrs {
+            statements.extend(quote!(
+                elt.attribute(&#a)?;
+            ))
+        }
+        statements.extend(quote!(
+            elt.close()?;
         ));
 
         statements.extend(content);

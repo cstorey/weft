@@ -26,4 +26,5 @@ pub use weft_derive::WeftRenderable;
 /// A module for things that should be in-scope by default in a template expression.
 pub mod prelude {
     pub use crate::extensions::*;
+    pub use crate::{RenderTarget, StartElementTarget};
 }

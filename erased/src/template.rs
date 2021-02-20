@@ -1,6 +1,8 @@
 use std::io;
 
-use weft::{RenderTarget, WeftRenderable};
+use weft::{AttrPair, QName, RenderTarget, WeftRenderable};
+
+struct ErasedRenderTarget<'a>(&'a mut dyn RenderTarget);
 
 /// This is exactly like the [`weft::WeftRenderable`] trait, but for cases where
 /// we need a trait object. Eg: for a `Vec<Box<dyn ErasedRenderable>>`.
@@ -13,14 +15,26 @@ impl<T> ErasedRenderable for T
 where
     T: WeftRenderable,
 {
-    fn erased_render_to(&self, mut target: &mut dyn RenderTarget) -> Result<(), io::Error> {
-        self.render_to(&mut target)
+    fn erased_render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
+        self.render_to(&mut ErasedRenderTarget(target))
     }
 }
 
 impl WeftRenderable for dyn ErasedRenderable {
     fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
         self.erased_render_to(target)
+    }
+}
+
+impl<'a> RenderTarget for ErasedRenderTarget<'a> {
+    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
+        self.0.start_element_attrs(name, attrs)
+    }
+    fn text(&mut self, content: &str) -> Result<(), io::Error> {
+        self.0.text(content)
+    }
+    fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
+        self.0.end_element(name)
     }
 }
 

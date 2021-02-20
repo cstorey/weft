@@ -44,18 +44,6 @@ pub trait WeftRenderable {
     fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error>;
 }
 
-impl<'a> RenderTarget for &'a mut dyn RenderTarget {
-    fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
-        (**self).start_element_attrs(name, attrs)
-    }
-    fn text(&mut self, content: &str) -> Result<(), io::Error> {
-        (**self).text(content)
-    }
-    fn end_element(&mut self, name: QName) -> Result<(), io::Error> {
-        (**self).end_element(name)
-    }
-}
-
 impl<'a, T: RenderTarget> RenderTarget for &'a mut T {
     fn start_element_attrs(&mut self, name: QName, attrs: &[&AttrPair]) -> Result<(), io::Error> {
         (**self).start_element_attrs(name, attrs)

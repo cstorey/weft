@@ -33,7 +33,6 @@ struct WithPolyContent<C> {
     child: C,
 }
 
-
 #[test]
 fn should_support_fn_content() {
     let child = weft_erased::render_fn(|target| target.text("Hello from a function"));

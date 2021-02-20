@@ -139,10 +139,10 @@ impl Walker {
             quote!(#repl.render_to(&mut __weft_target)?;)
         } else if let Some(content) = directive.content {
             let content = quote!(#content.render_to(&mut __weft_target)?;);
-            self.emit_element(&localname, &*directive.plain_attrs, content)?
+            self.emit_element(&localname, &*directive.plain_attrs, content)
         } else {
             let content = self.children(children)?;
-            self.emit_element(&localname, &*directive.plain_attrs, content)?
+            self.emit_element(&localname, &*directive.plain_attrs, content)
         };
 
         let res = if let Some(iter) = directive.iterator {
@@ -185,7 +185,7 @@ impl Walker {
         localname: &str,
         attrs: &[Attribute],
         content: TokenStream2,
-    ) -> Result<TokenStream2, Error> {
+    ) -> proc_macro2::TokenStream {
         let attrs_q = quote!(&[#(&#attrs),*]);
         let mut statements = TokenStream2::new();
         statements.extend(quote!(
@@ -197,7 +197,7 @@ impl Walker {
         statements.extend(quote!(
             __weft_target.end_element(#localname.into())?;
         ));
-        Ok(statements)
+        statements
     }
 }
 

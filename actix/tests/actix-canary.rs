@@ -15,7 +15,7 @@ struct Interpolatable<'a> {
 async fn should_render_from_handler() {
     fn handler() -> impl Future<Output = impl actix_web::Responder> {
         ready(WeftResponse::of(Interpolatable { name: "Bob" }))
-    };
+    }
     let mut app = test::init_service(App::new().route("/", web::get().to(handler))).await;
 
     let req = test::TestRequest::get().uri("/").to_request();

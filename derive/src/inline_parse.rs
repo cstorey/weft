@@ -13,7 +13,7 @@ pub struct Substitutable {
 }
 
 impl Substitutable {
-    pub fn children<'a>(&'a self) -> impl 'a + Iterator<Item = Segment> {
+    pub fn children(&self) -> impl Iterator<Item = Segment> + '_ {
         self.children.iter().cloned()
     }
 }

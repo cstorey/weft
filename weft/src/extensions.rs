@@ -18,19 +18,28 @@ impl<D: fmt::Display> Displayable for D {
 }
 
 impl<'a> WeftRenderable for &'a str {
-    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+    fn render_to<T>(&self, target: &mut T) -> Result<(), io::Error>
+    where
+        for<'t> &'t mut T: RenderTarget,
+    {
         target.text(self)
     }
 }
 
 impl WeftRenderable for String {
-    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+    fn render_to<T>(&self, target: &mut T) -> Result<(), io::Error>
+    where
+        for<'t> &'t mut T: RenderTarget,
+    {
         target.text(self)
     }
 }
 
 impl<'a, D: fmt::Display> WeftRenderable for Displayer<'a, D> {
-    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+    fn render_to<T>(&self, target: &mut T) -> Result<(), io::Error>
+    where
+        for<'t> &'t mut T: RenderTarget,
+    {
         target.text(&self.to_string())
     }
 }

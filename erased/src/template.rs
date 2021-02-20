@@ -4,6 +4,12 @@ use weft::{AttrPair, QName, RenderTarget, WeftRenderable};
 
 struct ErasedRenderTarget<'a>(&'a mut dyn RenderTarget);
 
+/// An erased version of [`weft::RenderTarget`], usable with a [`ErasedRenderable`]
+pub trait ErasedRenderTarget {}
+/// Erased version of [`weft::StartElementTarget`]
+pub trait ErasedStartElementTarget {}
+
+
 /// This is exactly like the [`weft::WeftRenderable`] trait, but for cases where
 /// we need a trait object. Eg: for a `Vec<Box<dyn ErasedRenderable>>`.
 pub trait ErasedRenderable {
@@ -11,17 +17,33 @@ pub trait ErasedRenderable {
     fn erased_render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error>;
 }
 
+impl StartElementTarget for Box<dyn ErasedStartElementTarget> {
+    fn attribute(&mut self, pair: &AttrPair) -> IoResult<()> {
+        (**self).erased_attribute(pair)
+    }
+
+    fn close(self) -> IoResult<()> {
+        (**self).erased_close()
+    }
+}
+
 impl<T> ErasedRenderable for T
 where
     T: WeftRenderable,
 {
-    fn erased_render_to(&self, target: &mut dyn RenderTarget) -> Result<(), io::Error> {
-        self.render_to(&mut ErasedRenderTarget(target))
+    fn erased_render_to(&self, mut target: &mut dyn ErasedRenderTarget) -> Result<(), io::Error> {
+        // self.render_to(target)
+        fn assert_render_target<T: RenderTarget>(t: T) -> T { t }
+
+        WeftRenderable::render_to(self, assert_render_target(target))
     }
 }
 
+
 impl WeftRenderable for dyn ErasedRenderable {
-    fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+    fn render_to<T>(&self, target: &mut T) -> Result<(), io::Error>
+    where
+        for<'t> &'t mut T: RenderTarget {
         self.erased_render_to(target)
     }
 }

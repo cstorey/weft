@@ -1,6 +1,5 @@
 use regex::*;
 use std::fmt;
-use std::io;
 use weft::*;
 
 #[test]
@@ -8,8 +7,15 @@ fn should_render_trivial_example() {
     struct TrivialExample;
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl WeftRenderable for TrivialExample {
-        fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
-            target.start_element_attrs("p".into(), &[])?;
+        fn render_to<T>(&self, target: &mut T) -> IoResult<()>
+        where
+            for<'t> &'t mut T: RenderTarget,
+        {
+            {
+                let e = RenderTarget::start_element(&mut *target, "p".into())?;
+                // let e = target.start_element("p".into())?;
+                e.close()?;
+            }
             target.text("Hello")?;
             target.end_element("p".into())?;
             Ok(())
@@ -31,8 +37,13 @@ fn should_render_attrs() {
     struct TrivialExample;
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl WeftRenderable for TrivialExample {
-        fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
-            target.start_element_attrs("p".into(), &[&AttrPair::new("class", "some-classes")])?;
+        fn render_to<T>(&self, target: &mut T) -> IoResult<()>
+        where
+            for<'t> &'t mut T: RenderTarget,
+        {
+            let mut e = target.start_element("p".into())?;
+            e.attribute(&AttrPair::new("class", "some-classes"))?;
+            e.close()?;
             target.text("Hello")?;
             target.end_element("p".into())?;
             Ok(())
@@ -55,7 +66,10 @@ fn render_supports_builtins() {
     struct TrivialExample;
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl WeftRenderable for TrivialExample {
-        fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+        fn render_to<T>(&self, target: &mut T) -> IoResult<()>
+        where
+            for<'t> &'t mut T: RenderTarget,
+        {
             "Hello world!".render_to(target)?;
             Ok(())
         }
@@ -76,7 +90,10 @@ fn display_supports_renderable() {
     struct Displayable<D>(D);
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl<D: fmt::Display> WeftRenderable for Displayable<D> {
-        fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+        fn render_to<T>(&self, target: &mut T) -> IoResult<()>
+        where
+            for<'t> &'t mut T: RenderTarget,
+        {
             use weft::prelude::*;
             self.0.display().render_to(target)?;
             Ok(())
@@ -93,12 +110,14 @@ fn display_supports_to_string() {
     struct Displayable<D>(D);
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl<D: fmt::Display> WeftRenderable for Displayable<D> {
-        fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
+        fn render_to<T>(&self, target: &mut T) -> IoResult<()>
+        where
+            for<'t> &'t mut T: RenderTarget,
+        {
             use weft::prelude::*;
-            target.start_element_attrs(
-                "p".into(),
-                &[&weft::AttrPair::new("x", self.0.display().to_string())],
-            )?;
+            let mut e = target.start_element("p".into())?;
+            e.attribute(&weft::AttrPair::new("x", self.0.display().to_string()))?;
+            e.close()?;
             Ok(())
         }
     }

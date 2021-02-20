@@ -4,4 +4,4 @@
 
 mod template;
 
-pub use template::{render_fn, ErasedRenderable};
+pub use template::{ErasedRenderable,render_fn};

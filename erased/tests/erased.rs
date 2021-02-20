@@ -1,5 +1,6 @@
 use weft::WeftRenderable;
 
+
 #[derive(WeftRenderable)]
 #[template(path = "../weft/tests/content.html")]
 struct WithBoxedContent {

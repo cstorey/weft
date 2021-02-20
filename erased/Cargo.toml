@@ -10,3 +10,9 @@ documentation = "https://docs.rs/weft-erased"
 edition = "2018"
 
 [dependencies]
+
+[dependencies.weft]
+path = "../weft"
+version = "0.1.0"
+
+[dev-dependencies]

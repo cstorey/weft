@@ -1,5 +1,6 @@
 use weft::WeftRenderable;
 
+
 #[derive(WeftRenderable)]
 #[template(path = "../weft/tests/content.html")]
 struct WithBoxedContent {
@@ -31,6 +32,7 @@ struct WithPolyContent<C> {
     // constraints when we declare the struct WeftRenderable impl.
     child: C,
 }
+
 
 #[test]
 fn should_support_fn_content() {

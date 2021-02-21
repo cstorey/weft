@@ -19,10 +19,16 @@ impl<'a> From<&'a str> for QName<'a> {
     }
 }
 
+impl<'a> QName<'a> {
+    fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
 /// An attribute name and value pair.
 #[derive(Debug)]
-pub struct AttrPair {
-    name: String,
+pub struct AttrPair<'n> {
+    name: QName<'n>,
     value: String,
 }
 
@@ -91,9 +97,9 @@ impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
     }
 }
 
-impl AttrPair {
+impl<'n> AttrPair<'n> {
     /// Builds an attribute from a local-name and a value convertible to a string.
-    pub fn new<S: ToString>(local_name: &str, value: S) -> Self {
+    pub fn new<S: ToString>(local_name: &'n str, value: S) -> Self {
         AttrPair {
             name: local_name.into(),
             value: value.to_string(),

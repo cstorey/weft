@@ -27,9 +27,9 @@ impl<'a> QName<'a> {
 
 /// An attribute name and value pair.
 #[derive(Debug)]
-pub struct AttrPair<'n> {
+pub struct AttrPair<'n, 'v> {
     name: QName<'n>,
-    value: String,
+    value: Cow<'v, str>,
 }
 
 /// Something that we can use to actually render HTML to text.
@@ -97,13 +97,10 @@ impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
     }
 }
 
-impl<'n> AttrPair<'n> {
+impl<'n, 'v> AttrPair<'n, 'v> {
     /// Builds an attribute from a local-name and a value convertible to a string.
-    pub fn new<S: ToString>(name: QName<'n>, value: S) -> Self {
-        AttrPair {
-            name,
-            value: value.to_string(),
-        }
+    pub fn new(name: QName<'n>, value: Cow<'v, str>) -> Self {
+        AttrPair { name, value }
     }
 }
 

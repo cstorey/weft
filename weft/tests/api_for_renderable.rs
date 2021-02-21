@@ -32,7 +32,10 @@ fn should_render_attrs() {
     // This simulates what a template of the form `<p>Hello</p>` should compile to.
     impl WeftRenderable for TrivialExample {
         fn render_to(&self, target: &mut impl RenderTarget) -> Result<(), io::Error> {
-            target.start_element_attrs("p".into(), &[&AttrPair::new("class".into(), "some-classes")])?;
+            target.start_element_attrs(
+                "p".into(),
+                &[&AttrPair::new("class".into(), "some-classes".into())],
+            )?;
             target.text("Hello")?;
             target.end_element("p".into())?;
             Ok(())
@@ -97,7 +100,10 @@ fn display_supports_to_string() {
             use weft::prelude::*;
             target.start_element_attrs(
                 "p".into(),
-                &[&weft::AttrPair::new("x".into(), self.0.display().to_string())],
+                &[&weft::AttrPair::new(
+                    "x".into(),
+                    self.0.display().to_string().into(),
+                )],
             )?;
             Ok(())
         }

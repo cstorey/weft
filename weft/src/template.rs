@@ -1,21 +1,21 @@
-use std::io;
+use std::{borrow::Cow, io};
 
 use v_htmlescape::escape;
 
 /// An internal representation of a qualified name, such as a tag or attribute.
 /// Does not currently support namespaces.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct QName(String);
+pub struct QName<'a>(Cow<'a, str>);
 
-impl From<String> for QName {
+impl From<String> for QName<'static> {
     fn from(src: String) -> Self {
-        QName(src)
+        QName(src.into())
     }
 }
 
-impl<'a> From<&'a str> for QName {
+impl<'a> From<&'a str> for QName<'a> {
     fn from(src: &'a str) -> Self {
-        QName(src.to_string())
+        QName(src.into())
     }
 }
 

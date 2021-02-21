@@ -1,29 +1,35 @@
-use std::io;
+use std::{borrow::Cow, io};
 
 use v_htmlescape::escape;
 
 /// An internal representation of a qualified name, such as a tag or attribute.
 /// Does not currently support namespaces.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct QName(String);
+pub struct QName<'a>(Cow<'a, str>);
 
-impl From<String> for QName {
+impl From<String> for QName<'static> {
     fn from(src: String) -> Self {
-        QName(src)
+        QName(src.into())
     }
 }
 
-impl<'a> From<&'a str> for QName {
+impl<'a> From<&'a str> for QName<'a> {
     fn from(src: &'a str) -> Self {
-        QName(src.to_string())
+        QName(src.into())
+    }
+}
+
+impl<'a> QName<'a> {
+    fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
     }
 }
 
 /// An attribute name and value pair.
 #[derive(Debug)]
-pub struct AttrPair {
-    name: String,
-    value: String,
+pub struct AttrPair<'n, 'v> {
+    name: QName<'n>,
+    value: Cow<'v, str>,
 }
 
 /// Something that we can use to actually render HTML to text.
@@ -91,13 +97,10 @@ impl<'a, T: 'a + io::Write> RenderTarget for Html5Ser<T> {
     }
 }
 
-impl AttrPair {
+impl<'n, 'v> AttrPair<'n, 'v> {
     /// Builds an attribute from a local-name and a value convertible to a string.
-    pub fn new<S: ToString>(local_name: &str, value: S) -> Self {
-        AttrPair {
-            name: local_name.into(),
-            value: value.to_string(),
-        }
+    pub fn new(name: QName<'n>, value: Cow<'v, str>) -> Self {
+        AttrPair { name, value }
     }
 }
 

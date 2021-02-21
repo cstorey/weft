@@ -254,7 +254,9 @@ impl quote::ToTokens for Attribute {
             );
 
         let value = quote!(#str_iter_q.collect::<String>());
-        tokens.append_all(quote!(::weft::AttrPair::new(#key_name, #value)))
+        tokens.append_all(
+            quote!(::weft::AttrPair::new(::weft::QName::from(#key_name), #value.into())),
+        )
     }
 }
 

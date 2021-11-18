@@ -51,7 +51,7 @@ struct TemplateDerivation {
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we
     // don't know for sure that we're using the same `log` crate. So, just in case?
-    env_logger::try_init().unwrap_or_default();
+    env_logger::Builder::from_env("WEFT_LOG").try_init().unwrap_or_default();
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
     match make_template(ast) {
         Ok(toks) => toks.into(),

@@ -51,7 +51,9 @@ struct TemplateDerivation {
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we
     // don't know for sure that we're using the same `log` crate. So, just in case?
-    env_logger::Builder::from_env("WEFT_LOG").try_init().unwrap_or_default();
+    env_logger::Builder::from_env("WEFT_LOG")
+        .try_init()
+        .unwrap_or_default();
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
     match make_template(ast) {
         Ok(toks) => toks.into(),
@@ -63,9 +65,9 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
     info!("Deriving for {}", item.ident);
     trace!("{:#?}", item);
     let config = TemplateDerivation::from_derive(&item).context("find template")?;
-    let dom = config.load_relative_to(&root_dir())?;
+    let dom = config.load()?;
 
-    let impl_body = derive_impl(dom, item)?;
+    let impl_body = derive_impl(&config, dom, item)?;
 
     Ok(impl_body.into_token_stream())
 }
@@ -148,6 +150,7 @@ impl TemplateDerivation {
 
         let template_source = match (path, source) {
             (Some(path), None) => {
+                let path = root_dir().join(path);
                 TemplateSource::Path(path)
             },
             (None, Some(source)) => {
@@ -166,12 +169,9 @@ impl TemplateDerivation {
         Ok(res)
     }
 
-    fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<NodeRef, Error> {
+    fn load(&self) -> Result<NodeRef, Error> {
         let root = match &self.template_source {
-            TemplateSource::Path(ref path) => {
-                let path = PathBuf::from(root_dir.as_ref()).join(path);
-                parse_path(&path)?
-            }
+            TemplateSource::Path(ref path) => parse_path(path)?,
             TemplateSource::Source(ref source) => parse_source(source),
         };
 
@@ -215,16 +215,24 @@ mod tests {
     #[test]
     fn can_parse_with_path() {
         let deriv = parse_quote!(
-            #[template(path = "hello.html")]
+            #[template(path = "../weft/tests/trivial.html")]
             struct X;
         );
 
         let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
 
-        assert_eq!(
-            conf.template_source,
-            TemplateSource::Path(PathBuf::from("hello.html"))
-        );
+        let path = if let TemplateSource::Path(p) = conf.template_source {
+            std::fs::canonicalize(&p)
+                .with_context(|| format!("Path: {:?}", p))
+                .expect("Path must be canonicalisable")
+        } else {
+            panic!("Template source must be a Path(…); got: {:?}", conf)
+        };
+
+        let expected = std::fs::canonicalize("../weft/tests/trivial.html")
+            .expect("canonicalize expected path");
+
+        assert_eq!(path, expected);
     }
 
     #[test]

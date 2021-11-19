@@ -63,7 +63,7 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
     info!("Deriving for {}", item.ident);
     trace!("{:#?}", item);
     let config = TemplateDerivation::from_derive(&item).context("find template")?;
-    let dom = config.load_relative_to(&root_dir())?;
+    let dom = config.load()?;
 
     let impl_body = derive_impl(dom, item)?;
 
@@ -148,6 +148,7 @@ impl TemplateDerivation {
 
         let template_source = match (path, source) {
             (Some(path), None) => {
+                let path = root_dir().join(path);
                 TemplateSource::Path(path)
             },
             (None, Some(source)) => {
@@ -166,11 +167,10 @@ impl TemplateDerivation {
         Ok(res)
     }
 
-    fn load_relative_to<P: AsRef<Path>>(&self, root_dir: P) -> Result<NodeRef, Error> {
+    fn load(&self) -> Result<NodeRef, Error> {
         let root = match &self.template_source {
             TemplateSource::Path(ref path) => {
-                let path = PathBuf::from(root_dir.as_ref()).join(path);
-                parse_path(&path)?
+                parse_path(path)?
             }
             TemplateSource::Source(ref source) => parse_source(source),
         };

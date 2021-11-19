@@ -215,16 +215,24 @@ mod tests {
     #[test]
     fn can_parse_with_path() {
         let deriv = parse_quote!(
-            #[template(path = "hello.html")]
+            #[template(path = "../weft/tests/trivial.html")]
             struct X;
         );
 
         let conf = TemplateDerivation::from_derive(&deriv).expect("parse derive");
 
-        assert_eq!(
-            conf.template_source,
-            TemplateSource::Path(PathBuf::from("hello.html"))
-        );
+        let path = if let TemplateSource::Path(p) = conf.template_source {
+            std::fs::canonicalize(&p)
+                .with_context(|| format!("Path: {:?}", p))
+                .expect("Path must be canonicalisable")
+        } else {
+            panic!("Template source must be a Path(…); got: {:?}", conf)
+        };
+
+        let expected = std::fs::canonicalize("../weft/tests/trivial.html")
+            .expect("canonicalize expected path");
+
+        assert_eq!(path, expected);
     }
 
     #[test]

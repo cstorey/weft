@@ -1,5 +1,6 @@
 use crate::inline_parse::{parse_inline, Segment, Substitutable};
-use anyhow::Error;
+use crate::{TemplateDerivation, TemplateSource};
+use anyhow::{anyhow, Context, Error};
 use kuchiki::iter::Siblings;
 use kuchiki::{ElementData, ExpandedName, NodeData, NodeRef};
 use log::*;
@@ -33,21 +34,39 @@ struct IteratorDecl {
     expr: syn::Expr,
 }
 
-fn render_to_fn(nodes: NodeRef) -> Result<TokenStream2, Error> {
+fn render_to_fn(src: &TemplateDerivation, nodes: NodeRef) -> Result<TokenStream2, Error> {
     let walker = Walker::default();
     let impl_body = walker.children(nodes.children())?;
+    let include_deps = if let TemplateSource::Path(path) = &src.template_source {
+        std::fs::metadata(path).with_context(|| format!("Checking for file: {:?}", path))?;
+
+        let path_str = path
+            .to_str()
+            .ok_or_else(|| anyhow!("Non representable path specified: {:?}", path))?;
+        quote! {
+            let _ = include_bytes!(#path_str);
+        }
+    } else {
+        quote! {}
+    };
+
     Ok(quote! {
             fn render_to(&self, mut __weft_target: &mut impl ::weft::RenderTarget) -> Result<(), ::std::io::Error> {
                 use ::weft::prelude::*;
+                #include_deps;
                 #impl_body;
                 Ok(())
             }
     })
 }
 
-pub fn derive_impl(nodes: NodeRef, mut item: syn::DeriveInput) -> Result<TokenStream2, Error> {
+pub(crate) fn derive_impl(
+    src: &TemplateDerivation,
+    nodes: NodeRef,
+    mut item: syn::DeriveInput,
+) -> Result<TokenStream2, Error> {
     info!("Deriving implementation for {}", item.ident);
-    let render_to_fn_impl = render_to_fn(nodes)?;
+    let render_to_fn_impl = render_to_fn(src, nodes)?;
 
     info!("Generics before: {:#?}", item.generics);
     let bounds = item

@@ -51,7 +51,9 @@ struct TemplateDerivation {
 pub fn derive_template(input: TokenStream) -> TokenStream {
     // Theoretically `rustc` provides it's own logging, but we
     // don't know for sure that we're using the same `log` crate. So, just in case?
-    env_logger::Builder::from_env("WEFT_LOG").try_init().unwrap_or_default();
+    env_logger::Builder::from_env("WEFT_LOG")
+        .try_init()
+        .unwrap_or_default();
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
     match make_template(ast) {
         Ok(toks) => toks.into(),
@@ -65,7 +67,7 @@ fn make_template(item: syn::DeriveInput) -> Result<proc_macro2::TokenStream, Err
     let config = TemplateDerivation::from_derive(&item).context("find template")?;
     let dom = config.load()?;
 
-    let impl_body = derive_impl(dom, item)?;
+    let impl_body = derive_impl(&config, dom, item)?;
 
     Ok(impl_body.into_token_stream())
 }
@@ -169,9 +171,7 @@ impl TemplateDerivation {
 
     fn load(&self) -> Result<NodeRef, Error> {
         let root = match &self.template_source {
-            TemplateSource::Path(ref path) => {
-                parse_path(path)?
-            }
+            TemplateSource::Path(ref path) => parse_path(path)?,
             TemplateSource::Source(ref source) => parse_source(source),
         };
 

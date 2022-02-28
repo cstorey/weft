@@ -14,7 +14,7 @@ documentation = "https://docs.rs/weft-actix"
 [dependencies]
 weft = { path = "../weft" }
 weft_derive = { path = "../derive" }
-actix-web = "3.0.1"
+actix-web = "4.0.1"
 futures = "0.3.1"
 
 [dev-dependencies]

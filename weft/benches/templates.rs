@@ -1,4 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{
+    black_box, criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId,
+    Criterion, Throughput,
+};
 
 // Based on the examples in:
 // https://github.com/djc/template-benchmarks-rs/tree/b7dee092f621ab5f27d365a1066a499d6f4bf6a2
@@ -50,26 +53,7 @@ pub fn teams(b: &mut Criterion) {
     });
 }
 
-macro_rules! big_table_sized {
-    ($name: ident, $inner: ident, $size: expr) => {
-        pub fn $name(b: &mut Criterion) {
-            $inner(b, $size);
-        }
-    };
-}
-
-big_table_sized!(big_table_allocating_001x001, big_table, 1);
-big_table_sized!(big_table_allocating_004x004, big_table, 4);
-big_table_sized!(big_table_allocating_016x016, big_table, 16);
-big_table_sized!(big_table_allocating_064x064, big_table, 64);
-big_table_sized!(big_table_allocating_256x256, big_table, 256);
-big_table_sized!(big_table_reuse_buffer_001x001, big_table_reuse_buffer, 1);
-big_table_sized!(big_table_reuse_buffer_004x004, big_table_reuse_buffer, 4);
-big_table_sized!(big_table_reuse_buffer_016x016, big_table_reuse_buffer, 16);
-big_table_sized!(big_table_reuse_buffer_064x064, big_table_reuse_buffer, 64);
-big_table_sized!(big_table_reuse_buffer_256x256, big_table_reuse_buffer, 256);
-
-fn big_table(b: &mut Criterion, size: usize) {
+fn big_table(group: &mut BenchmarkGroup<WallTime>, size: usize) {
     let mut table = Vec::with_capacity(size);
     for _ in 0..size {
         let mut inner = Vec::with_capacity(size);
@@ -81,12 +65,22 @@ fn big_table(b: &mut Criterion, size: usize) {
     let tmpl = BigTable { table };
 
     let thunk = || weft::render_to_string(&tmpl);
-    // b.bytes = thunk().expect("render").len().try_into().unwrap();
-
-    b.bench_function(&format!("big table {size}"), |b| b.iter(thunk));
+    let bytes = thunk().expect("render").len();
+    group.throughput(Throughput::Bytes(bytes as u64));
+    group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, _| {
+        b.iter(thunk)
+    });
 }
 
-fn big_table_reuse_buffer(b: &mut Criterion, size: usize) {
+fn big_table_group(c: &mut Criterion) {
+    let mut group = c.benchmark_group("big table");
+    for size in [1, 4, 16, 64, 256].iter() {
+        big_table(&mut group, *size)
+    }
+    group.finish();
+}
+
+fn big_table_reuse_buffer(group: &mut BenchmarkGroup<WallTime>, size: usize) {
     let mut table = Vec::with_capacity(size);
     for _ in 0..size {
         let mut inner = Vec::with_capacity(size);
@@ -99,30 +93,33 @@ fn big_table_reuse_buffer(b: &mut Criterion, size: usize) {
 
     let mut buf = Vec::new();
     weft::render_writer(&tmpl, &mut buf).expect("render");
-    // b.bytes = buf.len().try_into().unwrap();
+    // let mut buf = Vec::new();
+    // weft::render_writer(&tmpl, &mut buf).expect("render");
+    let output_len = buf.len();
 
     let mut thunk = || {
         buf.clear();
         weft::render_writer(&tmpl, &mut buf)
     };
 
-    b.bench_function(&format!("big table (reused buffer) {size}"), |b| {
+    group.throughput(Throughput::Bytes(output_len as u64));
+    group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, _| {
         b.iter(&mut thunk)
     });
+}
+
+fn big_table_reuse_buffer_group(c: &mut Criterion) {
+    let mut group = c.benchmark_group("big table");
+    for size in [1, 4, 16, 64, 256].iter() {
+        big_table_reuse_buffer(&mut group, *size)
+    }
+    group.finish();
 }
 
 criterion_group!(
     benches,
     teams,
-    big_table_allocating_001x001,
-    big_table_allocating_004x004,
-    big_table_allocating_016x016,
-    big_table_allocating_064x064,
-    big_table_allocating_256x256,
-    big_table_reuse_buffer_001x001,
-    big_table_reuse_buffer_004x004,
-    big_table_reuse_buffer_016x016,
-    big_table_reuse_buffer_064x064,
-    big_table_reuse_buffer_256x256,
+    big_table_group,
+    big_table_reuse_buffer_group,
 );
 criterion_main!(benches);

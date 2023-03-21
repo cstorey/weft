@@ -122,7 +122,7 @@ impl TemplateDerivation {
         let mut attrs = item
             .attrs
             .iter()
-            .filter(|a| a.path == template_path)
+            .filter(|a| a.path() == &template_path)
             .inspect(|a| info!("Attribute: {:#?}", a));
         let attr = attrs
             .next()

@@ -7,7 +7,7 @@ use log::*;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use quote::TokenStreamExt;
-use syn::{parse_quote, Token};
+use syn::{parse_quote, Pat, Token};
 
 #[derive(Default, Debug)]
 struct Walker;
@@ -289,7 +289,7 @@ impl quote::ToTokens for IteratorDecl {
 
 impl syn::parse::Parse for IteratorDecl {
     fn parse(buf: &syn::parse::ParseBuffer<'_>) -> Result<Self, syn::parse::Error> {
-        let pattern = buf.parse()?;
+        let pattern = Pat::parse_single(buf)?;
         let in_ = buf.parse()?;
         let expr = buf.parse()?;
         Ok(IteratorDecl { pattern, in_, expr })

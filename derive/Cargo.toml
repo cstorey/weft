@@ -22,7 +22,7 @@ anyhow = "1.0.28"
 
 [dependencies.syn]
 features = ["extra-traits", "full"]
-version = "1.0"
+version = "2.0"
 
 [lib]
 proc-macro = true

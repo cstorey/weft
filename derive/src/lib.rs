@@ -77,7 +77,7 @@ fn parse_path(path: &Path) -> Result<NodeRef, Error> {
     let parser = kuchiki::parse_html().from_utf8();
 
     let root = parser
-        .from_file(&path)
+        .from_file(path)
         .with_context(|| format!("Parsing template from path {:?}", &path))?;
 
     Ok(root)

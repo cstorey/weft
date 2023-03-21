@@ -61,6 +61,6 @@ mod test {
     #[test]
     fn from_fn_should_be_renderable() {
         let child = render_fn(|_| Ok(()));
-        assert_renderable(&child);
+        assert_renderable(child);
     }
 }

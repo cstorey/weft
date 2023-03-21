@@ -114,7 +114,7 @@ impl Walker {
                 Ok(ts)
             }
             NodeData::Text(ref contents) => {
-                let ts = self.text(&*contents.borrow())?;
+                let ts = self.text(&contents.borrow())?;
                 trace!("Text => {}", ts);
                 Ok(ts)
             }
@@ -158,10 +158,10 @@ impl Walker {
             quote!(#repl.render_to(&mut __weft_target)?;)
         } else if let Some(content) = directive.content {
             let content = quote!(#content.render_to(&mut __weft_target)?;);
-            self.emit_element(&localname, &*directive.plain_attrs, content)
+            self.emit_element(&localname, &directive.plain_attrs, content)
         } else {
             let content = self.children(children)?;
-            self.emit_element(&localname, &*directive.plain_attrs, content)
+            self.emit_element(&localname, &directive.plain_attrs, content)
         };
 
         let res = if let Some(iter) = directive.iterator {

@@ -35,7 +35,7 @@ struct IteratorDecl {
 }
 
 fn render_to_fn(src: &TemplateDerivation, nodes: NodeRef) -> Result<TokenStream2, Error> {
-    let walker = Walker::default();
+    let walker = Walker;
     let impl_body = walker.children(nodes.children())?;
     let include_deps = if let TemplateSource::Path(path) = &src.template_source {
         std::fs::metadata(path).with_context(|| format!("Checking for file: {:?}", path))?;
